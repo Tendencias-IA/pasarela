@@ -67,8 +67,8 @@ wallet.service para leer saldo y accounts.service para buscar destinatario por t
 Resultado: `plan.md`, `research.md`, `data-model.md`, `contracts/` y `quickstart.md`.
 Revisa el **Constitution Check**: debe listar cada principio y decir cómo se cumple. Si
 hay una desviación, debe estar en "Complexity Tracking" con la alternativa más simple
-rechazada. Un plan que crea carpetas fuera de `backend/app/modules/transfers/` o
-`frontend/src/features/transfers/` sin justificación está mal.
+rechazada. Un plan que crea carpetas fuera de `api/app/modules/transfers/` o
+`webapp/src/features/transfers/` sin justificación está mal.
 
 Opcional pero recomendado: `/speckit-checklist` genera una lista de verificación de
 calidad de la spec.
@@ -78,9 +78,9 @@ calidad de la spec.
 Resultado: `tasks.md`. Exige que:
 
 - las pruebas de cada criterio aparezcan **antes** de la implementación que cubren;
-- cada tarea nombre el archivo exacto (`backend/app/modules/transfers/service.py`);
+- cada tarea nombre el archivo exacto (`api/app/modules/transfers/service.py`);
 - exista una tarea para `openapi.yaml`, una para el spec Playwright
-  `frontend/e2e/hu-06-preparar-transferencia.spec.ts` y, si hay esquema nuevo, una
+  `webapp/e2e/hu-06-preparar-transferencia.spec.ts` y, si hay esquema nuevo, una
   migración.
 
 Opcional: `/speckit-analyze` cruza spec, plan y tasks y reporta inconsistencias.
@@ -99,7 +99,7 @@ La IA ejecuta las tareas en orden. Tu trabajo es revisar, no mirar:
 ## Paso 6. Verificar y abrir el PR
 
 ```bash
-cd backend && ruff format . && ruff check . && mypy app && pytest
+cd api && ruff format . && ruff check . && mypy app && pytest
 cd ../frontend && npm run lint && npm run typecheck && npm run test && npm run e2e
 git log --oneline main..HEAD
 ```

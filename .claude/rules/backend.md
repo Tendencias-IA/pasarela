@@ -1,11 +1,11 @@
 ---
 paths:
-  - "backend/**"
+  - "api/**"
 ---
 
 # Backend: Python 3.12 + Flask 3 + SQLAlchemy 2 + MySQL 8
 
-Aplica a todo archivo bajo `backend/`. La estructura de módulos está en `architecture.md`;
+Aplica a todo archivo bajo `api/`. La estructura de módulos está en `architecture.md`;
 aquí van las convenciones de código. Decisiones de stack en `docs/adr/0002`.
 
 ## Herramientas obligatorias
@@ -19,7 +19,7 @@ aquí van las convenciones de código. Decisiones de stack en `docs/adr/0002`.
 Ejecutar antes de cada commit, en este orden:
 
 ```bash
-cd backend && ruff format . && ruff check . && mypy app && pytest
+cd api && ruff format . && ruff check . && mypy app && pytest
 ```
 
 ## App factory y configuración
@@ -30,7 +30,7 @@ cd backend && ruff format . && ruff check . && mypy app && pytest
 - La configuración se lee de variables de entorno en `app/config.py`
   (`DATABASE_URL`, `SECRET_KEY`, `SESSION_IDLE_MINUTES=5`, `LOG_LEVEL`). Sin valores por
   defecto para secretos: si falta `SECRET_KEY`, la app no arranca. Hay un
-  `backend/.env.example` con todas las claves y valores de ejemplo no sensibles.
+  `api/.env.example` con todas las claves y valores de ejemplo no sensibles.
 - Tres configs: `development`, `testing`, `production`. `testing` apunta a la base de
   datos del contenedor de pruebas y desactiva el rate limit.
 

@@ -1,6 +1,6 @@
 # Arquitectura: monolito modular con vertical slicing
 
-Aplica a todo el código de `backend/` y `frontend/`. Complementa la constitución
+Aplica a todo el código de `api/` y `webapp/`. Complementa la constitución
 (principios IV y V). Decisiones de fondo en `docs/adr/`.
 
 ## Módulos y su mapa a historias
@@ -24,7 +24,7 @@ tabla pertenece a un solo módulo.
 ## Estructura de carpetas del backend
 
 ```text
-backend/
+api/
 ├── app/
 │   ├── __init__.py            # create_app(config) y registro de blueprints
 │   ├── config.py              # clases Config por ambiente, valores desde variables de entorno
@@ -58,7 +58,7 @@ backend/
 └── pyproject.toml
 ```
 
-Frontend espejo por feature en `frontend/src/features/<modulo>/` (ver `frontend.md`).
+Frontend espejo por feature en `webapp/src/features/<modulo>/` (ver `frontend.md`).
 
 ## Capas dentro de un módulo
 

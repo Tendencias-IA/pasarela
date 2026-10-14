@@ -1,6 +1,6 @@
 # Observabilidad
 
-Aplica a `backend/`. Objetivo: poder verificar RNF-02 (rendimiento) y diagnosticar un
+Aplica a `api/`. Objetivo: poder verificar RNF-02 (rendimiento) y diagnosticar un
 rechazo o un error sin acceder a datos personales (RNF-06).
 
 ## Logs estructurados

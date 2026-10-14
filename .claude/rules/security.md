@@ -53,7 +53,7 @@ que el equipo adoptó. Decisiones de sesión en ADR-0004.
 ## Secretos y configuración
 
 - Secretos solo en variables de entorno (`SECRET_KEY`, `DATABASE_URL`). En el repo
-  únicamente `backend/.env.example` con valores de ejemplo inválidos. `.env` está en
+  únicamente `api/.env.example` con valores de ejemplo inválidos. `.env` está en
   `.gitignore`; `gitleaks` corre en CI.
 - Si un secreto llega a un commit: rotarlo primero, limpiar la historia después, avisar
   al equipo. Borrar el commit no lo des-filtra.

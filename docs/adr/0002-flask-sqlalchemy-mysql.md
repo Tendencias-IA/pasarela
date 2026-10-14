@@ -19,7 +19,7 @@ versionadas (RNF-05) y una API HTTP consumida por un frontend React.
 - **MySQL 8 / InnoDB**, `DECIMAL(15,2)` para dinero, `utf8mb4`, zona horaria UTC en
   servidor y conversión en el cliente.
 - **Pydantic 2** para validar entrada y serializar salida en `schemas.py`; el contrato
-  público se mantiene a mano en `backend/openapi.yaml` y se verifica con pruebas de
+  público se mantiene a mano en `api/openapi.yaml` y se verifica con pruebas de
   contrato.
 - Dependencias de apoyo: `argon2-cffi` (hash de contraseñas), `Flask-Limiter` (rate
   limit en login), `python-json-logger`.

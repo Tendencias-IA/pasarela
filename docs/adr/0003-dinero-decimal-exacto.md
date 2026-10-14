@@ -14,7 +14,7 @@ COP, con límites entre $100 y $5.000.000, sin saldo máximo.
 
 - Python: `decimal.Decimal`, siempre cuantizado a dos decimales
   (`amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)`). Helpers y constantes de
-  límites en `backend/app/common/money.py`.
+  límites en `api/app/common/money.py`.
 - MySQL: `DECIMAL(15,2)` en `wallets.balance` y `transactions.amount`, con `CHECK
   (balance >= 0)`.
 - JSON: los montos viajan como cadena (`"150000.00"`), nunca como número. Pydantic

@@ -8,13 +8,13 @@ ramas; frontend con Vitest y un escenario Playwright por historia.
 
 | Nivel | Qué prueba | Dónde | Necesita |
 | --- | --- | --- | --- |
-| Unitaria backend | reglas de negocio en `service.py` con repositorios falsos | `backend/app/modules/<m>/tests/unit/` | nada |
-| Integración backend | repositorio + servicio contra MySQL real: bloqueos, unicidad, migraciones | `backend/app/modules/<m>/tests/integration/` | MySQL en contenedor |
-| Contrato | cada respuesta cumple `openapi.yaml` | `backend/tests/contract/` | app de pruebas |
-| API end-to-end | flujo completo por HTTP (registro → login → recarga → transferencia) | `backend/tests/e2e_api/` | MySQL |
-| Unitaria frontend | componentes, hooks, `money/`, `problem.ts` | `frontend/src/**/__tests__/` | jsdom |
-| E2E navegador | un spec por HU, escritorio y móvil, con axe | `frontend/e2e/` | backend + MySQL |
-| Carga | p95 de RNF-02 con 20 usuarios | `backend/tests/load/locustfile.py` | ambiente completo; job nocturno, no bloquea PR |
+| Unitaria backend | reglas de negocio en `service.py` con repositorios falsos | `api/app/modules/<m>/tests/unit/` | nada |
+| Integración backend | repositorio + servicio contra MySQL real: bloqueos, unicidad, migraciones | `api/app/modules/<m>/tests/integration/` | MySQL en contenedor |
+| Contrato | cada respuesta cumple `openapi.yaml` | `api/tests/contract/` | app de pruebas |
+| API end-to-end | flujo completo por HTTP (registro → login → recarga → transferencia) | `api/tests/e2e_api/` | MySQL |
+| Unitaria frontend | componentes, hooks, `money/`, `problem.ts` | `webapp/src/**/__tests__/` | jsdom |
+| E2E navegador | un spec por HU, escritorio y móvil, con axe | `webapp/e2e/` | backend + MySQL |
+| Carga | p95 de RNF-02 con 20 usuarios | `api/tests/load/locustfile.py` | ambiente completo; job nocturno, no bloquea PR |
 
 La mayor parte de la cobertura del 90 % sale del nivel unitario: los servicios reciben
 un repositorio falso (`FakeWalletRepository` en `tests/fakes.py`) y se prueban todas las
@@ -93,7 +93,7 @@ def test_confirm_transfer_concurrent_requests_never_overdraw(db_session, two_use
   muestra ante montos y errores.
 - Mock de red con MSW (`src/test/server.ts`) usando respuestas que cumplen
   `openapi.yaml`; nunca se mockea `fetch` a mano.
-- Playwright: configuración en `frontend/playwright.config.ts` con `baseURL` de la app
+- Playwright: configuración en `webapp/playwright.config.ts` con `baseURL` de la app
   servida por Vite en modo preview contra un backend real con MySQL (CI levanta ambos).
   `retries: 0` en local, `1` en CI; traza y vídeo solo en fallo.
 

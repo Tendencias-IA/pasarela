@@ -20,8 +20,8 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | `docs/adr/` | Decisiones de arquitectura (ADR). |
 | `docs/referencia/` | Especificación de requisitos e historias de usuario (fuente de verdad del negocio). |
 | `specs/` | Una carpeta por historia implementada: `spec.md`, `plan.md`, `tasks.md`. |
-| `backend/` | API en Python + Flask (se crea al implementar la primera historia). |
-| `frontend/` | Aplicación web en React + Vite + TypeScript (se crea al implementar la primera historia). |
+| `api/` | API en Python + Flask (se crea al implementar la primera historia). |
+| `webapp/` | Aplicación web en React + Vite + TypeScript (se crea al implementar la primera historia). |
 | `.github/` | Plantilla de PR, CODEOWNERS y pipeline de CI. |
 
 ## Stack

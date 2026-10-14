@@ -1,14 +1,14 @@
 ---
 paths:
-  - "backend/app/modules/**/routes.py"
-  - "backend/app/modules/**/schemas.py"
-  - "backend/openapi.yaml"
-  - "frontend/src/shared/api/**"
+  - "api/app/modules/**/routes.py"
+  - "api/app/modules/**/schemas.py"
+  - "api/openapi.yaml"
+  - "webapp/src/shared/api/**"
 ---
 
 # Diseño de la API HTTP
 
-El contrato es `backend/openapi.yaml`. Se edita a mano en la misma tarea que el endpoint
+El contrato es `api/openapi.yaml`. Se edita a mano en la misma tarea que el endpoint
 y se verifica con pruebas de contrato (ver `testing.md`). El frontend genera sus tipos
 desde ese archivo con `openapi-typescript`; nunca escribe tipos de respuesta a mano.
 

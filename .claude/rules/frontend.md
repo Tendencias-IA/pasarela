@@ -1,11 +1,11 @@
 ---
 paths:
-  - "frontend/**"
+  - "webapp/**"
 ---
 
 # Frontend: React 18 + Vite + TypeScript
 
-Aplica a todo archivo bajo `frontend/`. Cubre RNF-03 (usabilidad y accesibilidad) y la
+Aplica a todo archivo bajo `webapp/`. Cubre RNF-03 (usabilidad y accesibilidad) y la
 parte de cliente de RNF-01 y RNF-06.
 
 ## Herramientas obligatorias
@@ -18,13 +18,13 @@ parte de cliente de RNF-01 y RNF-06.
 | Playwright | `e2e/`, proyectos `desktop-chromium` y `mobile-chromium` | un escenario rojo |
 
 ```bash
-cd frontend && npm run lint && npm run typecheck && npm run test && npm run e2e
+cd webapp && npm run lint && npm run typecheck && npm run test && npm run e2e
 ```
 
 ## Estructura
 
 ```text
-frontend/
+webapp/
 ├── src/
 │   ├── app/                 # router, providers, layout, temporizador de inactividad
 │   ├── features/            # espejo de los módulos del backend
@@ -47,7 +47,7 @@ frontend/
 
 - Una feature no importa componentes de otra feature; lo compartido va a `shared/`.
   Razón: igual que en el backend, una HU se implementa en una carpeta.
-- Los tipos de la API se generan con `npm run api:types` desde `backend/openapi.yaml` a
+- Los tipos de la API se generan con `npm run api:types` desde `api/openapi.yaml` a
   `src/shared/api/types.gen.ts`; ese archivo no se edita a mano.
 
 ## Componentes y estado

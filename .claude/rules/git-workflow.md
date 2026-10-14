@@ -37,8 +37,8 @@ ella sale producción. Ambientes: local y producción.
 
 ## Antes de hacer push
 
-1. `ruff format . && ruff check . && mypy app && pytest` en `backend/`;
-   `npm run lint && npm run typecheck && npm run test` en `frontend/`.
+1. `ruff format . && ruff check . && mypy app && pytest` en `api/`;
+   `npm run lint && npm run typecheck && npm run test` en `webapp/`.
 2. Leer el diff completo (`git diff main...HEAD`): sin `print`, sin `.only`, sin
    `TODO` sin ticket, sin secretos, sin archivos ajenos a la tarea.
 3. `git log --oneline main..HEAD`: cada línea cumple el formato y es un solo cambio.
