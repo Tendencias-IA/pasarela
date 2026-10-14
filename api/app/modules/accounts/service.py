@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy.exc import IntegrityError
 
@@ -69,16 +70,33 @@ def get_profile(user_id: int) -> AccountProfile:
 
 def update_phone(user_id: int, phone: str) -> AccountProfile:
     """HU-12 CA-2 a CA-8: conservar cuenta, saldo e historial."""
+    return _update_contact(user_id, phone, "phone")
+
+
+def update_email(user_id: int, email: str) -> AccountProfile:
+    """HU-13 CA-2 a CA-6: conservar teléfono y datos financieros."""
+    return _update_contact(user_id, email, "email")
+
+
+def _update_contact(user_id: int, value: str, field: Literal["phone", "email"]) -> AccountProfile:
     try:
         with transaction():
             user = repository.get_by_id(user_id, lock=True)
             if user is None:
                 raise ProfileNotFoundError()
-            if repository.phone_registered_elsewhere(user_id, phone):
+            duplicate = (
+                repository.phone_registered_elsewhere(user_id, value)
+                if field == "phone"
+                else repository.email_registered_elsewhere(user_id, value)
+            )
+            if duplicate:
                 raise DuplicateIdentityError()
-            repository.update_phone(user, phone)
+            if field == "phone":
+                repository.update_phone(user, value)
+            else:
+                repository.update_email(user, value)
             result = _profile(user)
     except IntegrityError as error:
         raise DuplicateIdentityError() from error
-    log.info("account.phone_updated", extra={"user_id": user_id})
+    log.info("account.contact_updated", extra={"user_id": user_id, "field": field})
     return result

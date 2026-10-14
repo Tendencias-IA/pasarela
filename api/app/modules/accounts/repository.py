@@ -56,3 +56,14 @@ def update_phone(user: User, phone: str) -> None:
     """HU-12 CA-6: modificar solo el teléfono y su timestamp automático."""
     user.phone = phone
     db.session.flush()
+
+
+def email_registered_elsewhere(user_id: int, email: str) -> bool:
+    statement = select(User.id).where(User.email == email, User.id != user_id).limit(1)
+    return db.session.execute(statement).scalar_one_or_none() is not None
+
+
+def update_email(user: User, email: str) -> None:
+    """HU-13 CA-4: modificar exclusivamente correo y timestamp."""
+    user.email = email
+    db.session.flush()

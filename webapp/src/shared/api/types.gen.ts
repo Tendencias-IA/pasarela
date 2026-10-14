@@ -86,7 +86,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Actualizar el teléfono propio (HU-12) */
+        /** Actualizar teléfono o correo propio (HU-12, HU-13) */
         patch: operations["updatePhone"];
         trace?: never;
     };
@@ -96,6 +96,10 @@ export interface components {
     schemas: {
         UpdatePhoneRequest: {
             phone: string;
+        };
+        UpdateEmailRequest: {
+            /** Format: email */
+            email: string;
         };
         AccountProfile: {
             full_name: string | null;
@@ -455,7 +459,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdatePhoneRequest"];
+                "application/json": components["schemas"]["UpdatePhoneRequest"] | components["schemas"]["UpdateEmailRequest"];
             };
         };
         responses: {
@@ -486,7 +490,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Teléfono ya registrado */
+            /** @description Teléfono o correo ya registrado */
             409: {
                 headers: {
                     [name: string]: unknown;

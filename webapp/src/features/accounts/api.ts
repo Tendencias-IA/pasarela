@@ -17,3 +17,7 @@ export function getProfile() {
 export function updatePhone(phone: string) {
   return request<AccountProfile>("/api/v1/profile", { method: "PATCH", body: { phone } });
 }
+
+export function updateEmail(email: string) {
+  return request<AccountProfile>("/api/v1/profile", { method: "PATCH", body: { email } });
+}
