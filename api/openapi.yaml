@@ -143,9 +143,37 @@ paths:
             type: integer
             minimum: 1
             default: 1
+        - name: from
+          in: query
+          required: false
+          description: Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-01"
+        - name: to
+          in: query
+          required: false
+          description: Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-31"
+        - name: type
+          in: query
+          required: false
+          description: >-
+            Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las
+            exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4).
+          schema:
+            type: string
+            enum: [all, sent, received, recharge]
+            default: all
       responses:
         "200":
-          description: Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC)
+          description: Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC)
           headers:
             X-Request-Id:
               schema: { type: string }
@@ -184,7 +212,9 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: page no es un entero desde 1 (code `validation`, errors[].field = page)
+          description: >-
+            `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo,
+            todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -377,6 +407,28 @@ paths:
                   db:
                     type: string
                     enum: [error]
+  /api/v1/auth/session:
+    get:
+      operationId: getSession
+      summary: Vencimiento de la sesión; la consulta cuenta como actividad (HU-04)
+      tags: [auth]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Sesión vigente; la cookie se renueva con el nuevo vencimiento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionOut"
+              examples:
+                vigente:
+                  value: { expires_at: "2026-10-14T21:45:00Z" }
+        "401":
+          description: Sin sesión, vencida o revocada (code `invalid_session`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
   /api/v1/auth/login:
     post:
       summary: Iniciar sesión con teléfono y contraseña (HU-02)
@@ -413,6 +465,133 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /api/v1/accounts:
+    post:
+      summary: Registrar una cuenta y su billetera con saldo inicial de $0 COP (HU-01)
+      operationId: registerAccount
+      security: []
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterAccountRequest"
+      responses:
+        "201":
+          description: Cuenta y billetera creadas de forma atómica, sin iniciar sesión
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterAccountResponse"
+        "400":
+          description: Cuerpo JSON inválido
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Teléfono, correo o identificación ya registrados
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "413":
+          description: Cuerpo superior al límite de 16 KB
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Uno o más campos ausentes o inválidos
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: Error inesperado sin persistencia parcial
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /api/v1/profile:
+    get:
+      operationId: getProfile
+      summary: Consultar el perfil propio para editar el teléfono
+      responses:
+        "200":
+          description: Perfil propio, sin contraseña
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    patch:
+      operationId: updatePhone
+      summary: Actualizar teléfono o correo propio (HU-12, HU-13)
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/UpdatePhoneRequest"
+                - $ref: "#/components/schemas/UpdateEmailRequest"
+      responses:
+        "200":
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Teléfono o correo ya registrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Campo ausente, inválido o no editable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   securitySchemes:
     sessionCookie:
@@ -420,6 +599,39 @@ components:
       in: cookie
       name: session
   schemas:
+    UpdatePhoneRequest:
+      type: object
+      additionalProperties: false
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          pattern: "^3[0-9]{9}$"
+    UpdateEmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    AccountProfile:
+      type: object
+      additionalProperties: false
+      required: [full_name, phone, national_id, email]
+      properties:
+        full_name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        national_id:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
     Money:
       type: string
       description: Monto en COP como cadena decimal con exactamente dos decimales.
@@ -539,6 +751,11 @@ components:
         recipient: { $ref: "#/components/schemas/RecipientMasked" }
         balance_after: { $ref: "#/components/schemas/Money" }
         created_at: { type: string, format: date-time }
+    SessionOut:
+      type: object
+      required: [expires_at]
+      properties:
+        expires_at: { type: string, format: date-time }
     LoginIn:
       type: object
       required: [phone, password]
@@ -549,6 +766,51 @@ components:
         password:
           type: string
           minLength: 8
+    RegisterAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [full_name, phone, national_id, email, password]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          pattern: "^[^0-9_]+$"
+        phone:
+          type: string
+          pattern: "^3[0-9]{9}$"
+        national_id:
+          type: string
+          minLength: 5
+          maxLength: 20
+          pattern: "^[A-Za-z0-9]+$"
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 8
+          pattern: "^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$"
+          writeOnly: true
+    RegisterAccountResponse:
+      type: object
+      additionalProperties: false
+      required: [account_id, wallet]
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          minimum: 1
+        wallet:
+          type: object
+          additionalProperties: false
+          required: [balance]
+          properties:
+            balance:
+              type: string
+              enum: ["0.00"]
     Problem:
       type: object
       required: [type, title, status, instance, code]

@@ -57,3 +57,12 @@
   font-size: 14px;
   color: var(--ion-color-success, #1f6f5c);
 }
+
+.auth-notice {
+  margin: 0;
+  color: var(--ion-color-medium-shade, #5f6b66);
+  background: var(--tai-teal-tint, #e6f4ef);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}

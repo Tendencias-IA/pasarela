@@ -8,6 +8,7 @@ import "@ionic/react/css/structure.css";
 import "@ionic/react/css/typography.css";
 import "@ionic/react/css/padding.css";
 import "./theme/variables.css";
+import "./styles.css";
 
 import { App } from "./app/App";
 

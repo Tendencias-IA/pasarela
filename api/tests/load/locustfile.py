@@ -30,6 +30,11 @@ class WalletUser(HttpUser):
     def health(self) -> None:
         self.client.get("/health", name="GET /health")
 
+    @task(2)
+    def wallet(self) -> None:
+        """HU-05 CA-6, RNF-02.1: p95 <= 2 s con 20 usuarios."""
+        self.client.get("/api/v1/wallet", name="GET /api/v1/wallet")
+
     @task
     def recharge(self) -> None:
         """HU-08 CA-10, RNF-02.3: p95 <= 3 s con 20 usuarios."""
@@ -45,11 +50,6 @@ class WalletUser(HttpUser):
         """HU-09 CA-8, RNF-02.2: p95 <= 3 s con 20 usuarios."""
         self.client.get("/api/v1/movements?page=1", name="GET /api/v1/movements")
 
-    @task(2)
-    def wallet(self) -> None:
-        """HU-05 CA-6, RNF-02.1: p95 <= 2 s con 20 usuarios."""
-        self.client.get("/api/v1/wallet", name="GET /api/v1/wallet")
-
     @task
     def transfer(self) -> None:
         """HU-07 CA-10, RNF-02.3: p95 <= 3 s con 20 usuarios."""
@@ -58,4 +58,11 @@ class WalletUser(HttpUser):
             json={"recipient_phone": RECIPIENT_PHONE, "amount": "100.00"},
             headers={"X-Requested-With": "fetch", "Idempotency-Key": str(uuid4())},
             name="POST /api/v1/transfers",
+        )
+
+    @task
+    def movements_filtered(self) -> None:
+        """HU-10, RNF-02.2: el filtro por tipo no degrada el p95 de 3 s del historial."""
+        self.client.get(
+            "/api/v1/movements?type=recharge", name="GET /api/v1/movements?type=recharge"
         )

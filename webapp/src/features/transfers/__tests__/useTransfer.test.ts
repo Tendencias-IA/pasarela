@@ -381,7 +381,7 @@ describe("useTransfer · confirmar (HU-07)", () => {
     const { result } = renderHook(() => ({
       transfer: useTransfer(),
       wallet: useWallet(),
-      movements: useMovements(1),
+      movements: useMovements({ page: 1, from: "", to: "", type: "all" }),
     }));
     await waitFor(() => {
       expect(result.current.wallet.data).toBeDefined();

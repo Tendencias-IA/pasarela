@@ -112,6 +112,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vencimiento de la sesión; la consulta cuenta como actividad (HU-04) */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -129,10 +146,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar una cuenta y su billetera con saldo inicial de $0 COP (HU-01) */
+        post: operations["registerAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consultar el perfil propio para editar el teléfono */
+        get: operations["getProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Actualizar teléfono o correo propio (HU-12, HU-13) */
+        patch: operations["updatePhone"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        UpdatePhoneRequest: {
+            phone: string;
+        };
+        UpdateEmailRequest: {
+            /** Format: email */
+            email: string;
+        };
+        AccountProfile: {
+            full_name: string | null;
+            phone: string;
+            national_id: string | null;
+            email: string | null;
+        };
         /**
          * @description Monto en COP como cadena decimal con exactamente dos decimales.
          * @example 50000.00
@@ -231,9 +296,30 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        SessionOut: {
+            /** Format: date-time */
+            expires_at: string;
+        };
         LoginIn: {
             phone: string;
             password: string;
+        };
+        RegisterAccountRequest: {
+            full_name: string;
+            phone: string;
+            national_id: string;
+            /** Format: email */
+            email: string;
+            /** Format: password */
+            password: string;
+        };
+        RegisterAccountResponse: {
+            /** Format: int64 */
+            account_id: number;
+            wallet: {
+                /** @enum {string} */
+                balance: "0.00";
+            };
         };
         Problem: {
             type: string;
@@ -376,6 +462,12 @@ export interface operations {
             query?: {
                 /** @description Número de página desde 1. Página inexistente responde items vacío con el total real. */
                 page?: number;
+                /** @description Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1). */
+                from?: string;
+                /** @description Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2). */
+                to?: string;
+                /** @description Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4). */
+                type?: "all" | "sent" | "received" | "recharge";
             };
             header?: never;
             path?: never;
@@ -383,7 +475,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
+            /** @description Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
             200: {
                 headers: {
                     "X-Request-Id"?: string;
@@ -402,7 +494,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description page no es un entero desde 1 (code `validation`, errors[].field = page) */
+            /** @description `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo, todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2). */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -600,6 +692,35 @@ export interface operations {
             };
         };
     };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión vigente; la cookie se renueva con el nuevo vencimiento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Sin sesión, vencida o revocada (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -641,6 +762,177 @@ export interface operations {
             };
             /** @description Demasiados intentos de inicio de sesión */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Requested-With": "fetch";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Cuenta y billetera creadas de forma atómica, sin iniciar sesión */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterAccountResponse"];
+                };
+            };
+            /** @description Cuerpo JSON inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Teléfono, correo o identificación ya registrados */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Cuerpo superior al límite de 16 KB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Uno o más campos ausentes o inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Error inesperado sin persistencia parcial */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil propio, sin contraseña */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountProfile"];
+                };
+            };
+            /** @description Sin sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updatePhone: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Requested-With": "fetch";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePhoneRequest"] | components["schemas"]["UpdateEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Perfil actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountProfile"];
+                };
+            };
+            /** @description Sin sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Teléfono o correo ya registrado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Campo ausente, inválido o no editable */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
