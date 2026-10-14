@@ -6,6 +6,8 @@ import logging
 from typing import Any
 
 from flask import Flask, Response, g, jsonify, request
+from flask_limiter.errors import RateLimitExceeded
+from pydantic import ValidationError as PydanticValidationError
 from werkzeug.exceptions import HTTPException
 
 PROBLEM_BASE = "https://pasarela.local/problems/"
@@ -56,6 +58,21 @@ def init_app(app: Flask) -> None:
     def handle_app_error(exc: AppError) -> Response:
         log.info("business.rejected", extra={"code": exc.code, "status": exc.status})
         return problem(exc.status, exc.code, exc.title, exc.detail, exc.errors)
+
+    @app.errorhandler(PydanticValidationError)
+    def handle_pydantic_error(exc: PydanticValidationError) -> Response:
+        errors = [
+            {"field": ".".join(str(part) for part in error["loc"]), "message": error["msg"]}
+            for error in exc.errors()
+        ]
+        return problem(422, "validation", "Datos inválidos", errors=errors)
+
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit(exc: RateLimitExceeded) -> Response:
+        log.info("rate_limit.exceeded", extra={"path": request.path})
+        return problem(
+            429, "too_many_attempts", "Demasiados intentos", "Intenta de nuevo más tarde."
+        )
 
     @app.errorhandler(HTTPException)
     def handle_http_error(exc: HTTPException) -> Response:

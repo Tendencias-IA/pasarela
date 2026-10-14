@@ -9,7 +9,8 @@ from flask import Flask
 from app.common import errors, health, security
 from app.common import logging as app_logging
 from app.config import get_config
-from app.extensions import db, migrate
+from app.extensions import db, limiter, migrate
+from app.modules.auth.routes import bp as auth_bp
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -21,10 +22,12 @@ def create_app(config_name: str | None = None) -> Flask:
     app_logging.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
     errors.init_app(app)
     security.init_app(app)
 
     app.register_blueprint(health.bp)
-    # Los módulos de negocio (accounts, auth, wallet, transfers, movements) se registran aquí
-    # a medida que se implementan las historias, con prefijo /api/v1.
+    app.register_blueprint(auth_bp)
+    # Los módulos de negocio (wallet, transfers, movements) se registran aquí a medida
+    # que se implementan sus historias, con prefijo /api/v1.
     return app

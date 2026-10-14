@@ -1,58 +1,122 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
-  title: Pasarela · Billetera Digital API
-  version: 0.1.0
-  description: Contrato de la API. Fuente de verdad para tipos del cliente y pruebas de contrato.
+  title: Pasarela API
+  description: >
+    Contrato de la API de la billetera digital (prototipo académico). Fuente de verdad
+    para la API y la webapp (ver .claude/rules/api-design.md). Los endpoints se añaden
+    aquí en la misma tarea que los implementa.
+  version: "0.1.0"
 servers:
   - url: /
 paths:
   /health:
     get:
-      operationId: getHealth
-      summary: Estado del servicio y de la base de datos
+      summary: Estado del servicio, sin sesión
+      operationId: health
       security: []
       responses:
         "200":
-          description: Servicio sano
+          description: El servicio y la base de datos responden
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Health"
+                type: object
+                required: [status, db]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  db:
+                    type: string
+                    enum: [ok]
         "503":
-          description: Base de datos no disponible
+          description: La base de datos no responde
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Health"
+                type: object
+                required: [status, db]
+                properties:
+                  status:
+                    type: string
+                    enum: [degraded]
+                  db:
+                    type: string
+                    enum: [error]
+  /api/v1/auth/login:
+    post:
+      summary: Iniciar sesión con teléfono y contraseña (HU-02)
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginIn"
+      responses:
+        "204":
+          description: Sesión concedida (token en cookie `Set-Cookie`, sin cuerpo)
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "422":
+          description: Teléfono o contraseña con formato inválido
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: Credenciales incorrectas (mismo cuerpo para teléfono inexistente o contraseña errónea)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: Demasiados intentos de inicio de sesión
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
-    Health:
+    LoginIn:
       type: object
-      required: [status, db]
+      required: [phone, password]
       properties:
-        status:
+        phone:
           type: string
-          enum: [ok, degraded]
-        db:
+          pattern: "^3[0-9]{9}$"
+        password:
           type: string
-          enum: [ok, error]
+          minLength: 8
     Problem:
       type: object
-      description: Error en formato RFC 9457
-      required: [type, title, status, code]
+      required: [type, title, status, instance, code]
       properties:
-        type: { type: string, format: uri }
-        title: { type: string }
-        status: { type: integer }
-        detail: { type: string }
-        instance: { type: string }
-        code: { type: string }
-        request_id: { type: string }
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        request_id:
+          type: string
+          nullable: true
         errors:
           type: array
           items:
             type: object
             required: [field, message]
             properties:
-              field: { type: string }
-              message: { type: string }
+              field:
+                type: string
+              message:
+                type: string
