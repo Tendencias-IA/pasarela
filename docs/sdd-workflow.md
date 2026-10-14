@@ -91,7 +91,8 @@ La IA ejecuta las tareas en orden. Tu trabajo es revisar, no mirar:
 
 - Después de cada grupo de tareas, corre los comandos de `AGENTS.md` y lee el diff.
 - Haz un commit por tarea o grupo lógico: `feat(PPA-6): validar rango de monto al
-  preparar transferencia`. Tú haces el commit, no la IA, y solo después de leerlo.
+  preparar transferencia`. Tú haces el commit, no la IA, y solo después de leer el diff
+  en el panel de control de versiones o con `git diff`; la IA deja todo sin `git add`.
 - Si la IA se sale de las reglas (un `float`, SQL en una ruta, un `except Exception:
   pass`), no lo corrijas a mano en silencio: díselo citando la regla, para que corrija el
   patrón y no solo la línea.

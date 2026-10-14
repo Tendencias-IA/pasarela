@@ -1,0 +1,9 @@
+/* Variables de tema de Ionic (ADR-0007). Ajustar aquí colores y tipografía, no en componentes. */
+:root {
+  --ion-color-primary: #1f6f8b;
+  --ion-color-primary-rgb: 31, 111, 139;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #1b627a;
+  --ion-color-primary-tint: #357d97;
+}

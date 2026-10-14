@@ -13,7 +13,23 @@ export default defineConfig({
   plugins: [react()],
   server: { host: "127.0.0.1", port: 5173, strictPort: true, proxy: apiProxy },
   preview: { host: "127.0.0.1", port: 4173, strictPort: true, proxy: apiProxy },
-  build: { outDir: "dist", sourcemap: false },
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    // Ionic core pesa ~1,2 MB minificado (266 kB gzip); se separa en su propio chunk y se
+    // sube el umbral de aviso solo para él (ADR-0007).
+    chunkSizeWarningLimit: 1500,
+    rolldownOptions: {
+      output: {
+        manualChunks: (id: string) =>
+          id.includes("node_modules/@ionic") || id.includes("node_modules/ionicons")
+            ? "ionic"
+            : id.includes("node_modules/react")
+              ? "react"
+              : undefined,
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     globals: false,

@@ -93,4 +93,7 @@ docker compose --profile app up --build
 - Bajar un umbral, excluir archivos de cobertura o silenciar un test para pasar el CI.
 - Añadir dependencias, colas, caché, microservicios o capas hexagonales sin ADR.
 - Escribir secretos en el repo o valores reales de personas en pruebas.
-- Hacer `git push`, abrir un PR o cambiar un ticket de Jira sin que la persona lo pida.
+- Hacer `git add`, `git commit`, `git push`, abrir un PR o cambiar un ticket de Jira sin que
+  la persona lo pida. Los cambios se dejan sin stage en el árbol de trabajo para que la
+  persona los revise en el control de versiones antes de confirmarlos (ver
+  `git-workflow.md`).

@@ -18,8 +18,12 @@
     "api:types": "openapi-typescript ../api/openapi.yaml -o src/shared/api/types.gen.ts"
   },
   "dependencies": {
+    "@ionic/react": "9.0.7",
+    "@ionic/react-router": "9.0.7",
+    "ionicons": "8.1.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
