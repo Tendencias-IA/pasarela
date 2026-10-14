@@ -28,9 +28,11 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app.register_blueprint(health.bp)
     # Módulos de negocio, con prefijo /api/v1/<recurso>.
+    from app.modules.accounts.routes import blueprint as accounts_bp
     from app.modules.auth.routes import bp as auth_bp
     from app.modules.wallet import routes as wallet_routes
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(accounts_bp)
     app.register_blueprint(wallet_routes.bp, url_prefix="/api/v1/wallet")
     return app

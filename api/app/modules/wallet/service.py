@@ -6,18 +6,27 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import IntegrityError
 
 from app.common.errors import AppError, problem_body
-from app.common.idempotency import IdempotencyContext
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.common.money import RECHARGE_MAX, RECHARGE_MIN, to_json
 from app.extensions import transaction
-from app.modules.wallet.repository import WalletRepository, default_repository
+from app.modules.wallet import repository as wallet_repository
+from app.modules.wallet.models import Wallet
+from app.modules.wallet.repository import SessionLike, WalletRepository, default_repository
 
 log = logging.getLogger("app.wallet")
+
+if TYPE_CHECKING:
+    from app.common.idempotency import IdempotencyContext
+
+
+def create_wallet_for_account(user_id: int, session: SessionLike) -> Wallet:
+    """HU-01 CA-2: crea la billetera dentro de la transacción del registro."""
+    return wallet_repository.create_for_user(user_id, session)
 
 
 class WalletNotFoundError(AppError):

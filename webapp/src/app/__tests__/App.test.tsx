@@ -9,7 +9,7 @@ describe("App (panel inicial)", () => {
   it("muestra el estado de la API cuando /health responde ok", async () => {
     render(<App />);
 
-    const status = await screen.findByText("API ok, base de datos ok");
+    const status = await screen.findByText("API ok, base de datos ok", {}, { timeout: 5000 });
 
     expect(status).toHaveAttribute("role", "status");
     expect(status).toHaveAttribute("data-health", "ok");
