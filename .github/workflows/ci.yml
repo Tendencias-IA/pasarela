@@ -120,6 +120,7 @@ jobs:
         run: |
           cd api
           flask db upgrade
+          python scripts/seed_test_user.py
           gunicorn -b 127.0.0.1:5000 "app:create_app()" --daemon --pid /tmp/gunicorn.pid
       - run: cd webapp && npm ci && npx playwright install --with-deps chromium
       - name: Esperar a que la API responda
@@ -217,8 +218,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ steps.token.outputs.token }}
         run: |
-          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/qualitygates/project_status?projectKey=pasarela" \
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" "http://localhost:9000/api/qualitygates/project_status?projectKey=pasarela" \
             | jq -r '.projectStatus as $p | "Estado: \($p.status)", ($p.conditions[] | "  \(.status)  \(.metricKey)=\(.actualValue // "sin medida")  (umbral \(.comparator) \(.errorThreshold))")'
-          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/measures/component?component=pasarela&metricKeys=coverage,lines_to_cover,uncovered_lines,duplicated_lines_density,bugs,vulnerabilities,code_smells,security_hotspots" \
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" "http://localhost:9000/api/measures/component?component=pasarela&metricKeys=coverage,lines_to_cover,uncovered_lines,duplicated_lines_density,bugs,vulnerabilities,code_smells,security_hotspots" \
             | jq -r '.component.measures[] | "  \(.metric)=\(.value)"'
 

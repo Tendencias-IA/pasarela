@@ -53,10 +53,11 @@ cd api && ruff format . && ruff check . && mypy app && pytest
 @bp.post("/recharges")
 @login_required
 @idempotent
-def create_recharge() -> tuple[dict[str, Any], int]:
-    payload = RechargeIn.model_validate(request.get_json())
-    result = service.recharge(current_user().id, payload.amount)  # la clave la gestiona @idempotent
-    return RechargeOut.from_domain(result).model_dump(), 201
+def create_recharge() -> tuple[Response, int]:
+    user_id = current_user_id()  # nunca del cuerpo ni de la URL (security.md)
+    payload = RechargeIn.parse(request.get_json(silent=True))  # errores → RFC 9457
+    result = service.recharge(user_id, payload.amount_decimal, g.idempotency)
+    return jsonify(RechargeOut.from_result(result).model_dump()), 201
 ```
 
 ```python
@@ -77,9 +78,13 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
 
 ## Schemas (Pydantic 2)
 
-- `schemas.py` define `XxxIn` para entrada y `XxxOut` para salida. Los montos se tipan
-  como `Decimal` con `condecimal(max_digits=15, decimal_places=2, gt=0)` y se serializan a
-  cadena (`model_config = ConfigDict(json_encoders=...)` o `field_serializer`).
+- `schemas.py` define `XxxIn` para entrada y `XxxOut` para salida, con
+  `model_config = ConfigDict(extra="forbid", strict=True)` en los de entrada. Los montos
+  viajan como cadena en JSON (api-design.md, ADR-0003): el campo se tipa `str`, un
+  `field_validator` lo valida con `parse_amount` (`app/common/money.py`) y una propiedad
+  `amount_decimal` entrega el `Decimal` al servicio; nunca `condecimal` ni `float`, porque
+  Pydantic aceptaría números JSON y `5000.1` ya llegaría con error binario. La salida
+  serializa con `to_json` (cadena con dos decimales).
 - La validación de formato (teléfono de 10 dígitos, correo, contraseña de 8+ con letra y
   número) vive en el schema con validadores de campo. La validación de negocio (unicidad,
   saldo, límites por tipo de operación) vive en el servicio. Razón: el schema no tiene
@@ -92,9 +97,11 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
 - Funciones puras de módulo (no clases con estado) que reciben ids y valores de dominio y
   devuelven dataclasses `frozen=True` definidas en el mismo `service.py` o en
   `app/common/`. Nunca reciben `request` ni devuelven `Response`.
-- El servicio abre la transacción con `with db.session.begin():` cuando escribe. Los
-  servicios llamados desde otro servicio no abren ni cierran transacciones; reciben la
-  sesión implícita.
+- El servicio delimita la transacción con `with transaction():` (`app/extensions.py`)
+  cuando escribe: commit al salir, rollback si falla, y compatible con el autobegin de
+  Flask-SQLAlchemy (una lectura previa en la misma petición no lo rompe, a diferencia
+  de `db.session.begin()`). Los servicios llamados desde otro servicio no abren ni
+  cierran transacciones; participan en la del llamador.
 - Errores de negocio son excepciones que heredan de `AppError` (`app/common/errors.py`)
   con `status`, `code` y `detail`, nombradas con sufijo `Error` (regla N818 de Ruff): `InsufficientBalanceError`, `RecipientNotFoundError`,
   `SelfTransferError`, `AmountOutOfRangeError`, `DuplicateIdentityError`, `InvalidCredentialsError`,
@@ -111,7 +118,7 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
   escriben explícitos: `select(Wallet).where(Wallet.id.in_(ids)).order_by(Wallet.id)
   .with_for_update()`.
 - Sin `commit()` en repositorios. Sin `db.session` fuera de `repository.py` salvo el
-  `begin()` del servicio.
+  `transaction()` del servicio.
 - Toda modificación de esquema lleva una migración Alembic generada con `flask db
   migrate -m "ppa-n descripcion"` y revisada a mano (autogenerate olvida `CHECK` y
   tipos `DECIMAL`).
@@ -144,5 +151,6 @@ en `pyproject.toml` con `~=`. Lista inicial permitida: `flask`, `flask-sqlalchem
 `flask-migrate`, `sqlalchemy`, `alembic`, `pymysql`, `cryptography` (autenticación de
 MySQL 8), `pydantic`, `argon2-cffi`, `flask-limiter`, `python-json-logger`, `gunicorn`;
 dev: `pytest`, `pytest-cov`, `pytest-mock`, `ruff`, `mypy`, `testcontainers[mysql]`,
-`schemathesis`; extra `load` (solo el job nocturno): `locust`, porque registra un plugin de
-pytest que cuelga la recolección de pruebas.
+`pyyaml` y `jsonschema` (pruebas de contrato: validan las respuestas contra los schemas
+de `openapi.yaml`); extra `load` (solo el job nocturno): `locust`, porque registra un
+plugin de pytest que cuelga la recolección de pruebas.

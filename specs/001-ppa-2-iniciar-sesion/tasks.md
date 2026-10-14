@@ -5,7 +5,7 @@ description: "Task list for Iniciar sesión (HU-02 / PPA-2)"
 
 # Tasks: Iniciar sesión
 
-**Input**: Design documents from `/specs/001-iniciar-sesion/`
+**Input**: Design documents from `/specs/001-ppa-2-iniciar-sesion/`
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/auth.openapi.yaml, quickstart.md
 
@@ -134,7 +134,7 @@ sesión + que una ruta protegida de prueba acepta esa cookie después.
   `204` + cookie, nunca `200` con cuerpo)
 - [ ] T017 [P] [US1] Test de contrato en
   `api/tests/contract/test_auth_contract.py`: la respuesta de
-  `POST /api/v1/auth/login` cumple `specs/001-iniciar-sesion/contracts/auth.openapi.yaml`
+  `POST /api/v1/auth/login` cumple `specs/001-ppa-2-iniciar-sesion/contracts/auth.openapi.yaml`
   (`204` sin cuerpo en éxito, `401`/`422`/`429` como `Problem` en error)
 
 ### Implementation for User Story 1
@@ -296,7 +296,7 @@ HU-03.
 webapp (login), que consume lo construido en las fases anteriores.
 
 - [ ] T039 [P] Crear `api/openapi.yaml` como fuente de verdad de la API (no existía
-  aún) a partir de `specs/001-iniciar-sesion/contracts/auth.openapi.yaml`, dejando
+  aún) a partir de `specs/001-ppa-2-iniciar-sesion/contracts/auth.openapi.yaml`, dejando
   la estructura lista para que futuras historias añadan sus propios `paths`
 - [ ] T040 Ejecutar `api/tests/contract/test_auth_contract.py` con `schemathesis`
   apuntando a `api/openapi.yaml` (no solo al fragmento de `specs/`) y corregir
@@ -328,7 +328,7 @@ webapp (login), que consume lo construido en las fases anteriores.
   y `cd webapp && npm run lint && npm run typecheck && npm run test` (ver
   `.claude/rules/git-workflow.md`, "Antes de hacer push") y confirmar cobertura
   de `api` ≥ 90 %
-- [ ] T047 Ejecutar `specs/001-iniciar-sesion/quickstart.md` paso a paso contra un
+- [ ] T047 Ejecutar `specs/001-ppa-2-iniciar-sesion/quickstart.md` paso a paso contra un
   entorno local (`docker compose up -d mysql && flask db upgrade`) para validar
   manualmente los tres escenarios de usuario
 

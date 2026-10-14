@@ -29,6 +29,8 @@ dev = [
   "ruff~=0.12",
   "mypy~=1.17",
   "testcontainers[mysql]~=4.8",
+  "pyyaml~=6.0",
+  "jsonschema~=4.23",
 ]
 # Locust registra un plugin de pytest que cuelga la recolección; va en un extra aparte
 # que solo instala el job nocturno de carga.
@@ -47,9 +49,9 @@ select = ["E", "F", "I", "B", "UP", "S", "N", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "S107"]
 "migrations/**" = ["E501", "I001"]
-"app/modules/**/tests/**" = ["S101", "S105", "S106", "S107"]
-"app/common/tests/**" = ["S101", "S105", "S106", "S107"]
+"app/**/tests/**" = ["S101", "S105", "S106", "S107"]
 "scripts/**" = ["S105"]
+"conftest.py" = ["S101", "S106"]
 
 [tool.mypy]
 python_version = "3.12"

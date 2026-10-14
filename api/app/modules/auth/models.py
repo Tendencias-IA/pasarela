@@ -1,4 +1,4 @@
-"""Modelo `sessions` del módulo auth (ver specs/001-iniciar-sesion/data-model.md)."""
+"""Modelo `sessions` del módulo auth (ver specs/001-ppa-2-iniciar-sesion/data-model.md)."""
 
 from __future__ import annotations
 

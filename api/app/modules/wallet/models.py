@@ -1,4 +1,6 @@
-"""Wallet-owned persistence model."""
+"""Tabla `wallets`, propia del módulo wallet."""
+
+from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
@@ -6,25 +8,23 @@ from decimal import Decimal
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.extensions import db
+from app.extensions import Base
 
 
-class Wallet(db.Model):  # type: ignore[name-defined,misc]
+class Wallet(Base):
     __tablename__ = "wallets"
-    __table_args__ = (CheckConstraint("balance >= 0", name="ck_wallets_balance_nonnegative"),)
+    __table_args__ = (CheckConstraint("balance >= 0", name="ck_wallets_balance_non_negative"),)
+
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="RESTRICT", name="fk_wallets_user_id_users"),
-        nullable=False,
-        unique=True,
+        BigInteger, ForeignKey("users.id"), nullable=False, unique=True
     )
     balance: Mapped[Decimal] = mapped_column(
-        Numeric(15, 2), nullable=False, default=Decimal("0.00"), server_default="0.00"
+        Numeric(15, 2, asdecimal=True), nullable=False, server_default="0.00"
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=func.utc_timestamp()
+        DateTime(timezone=False), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=func.utc_timestamp(), onupdate=func.utc_timestamp()
+        DateTime(timezone=False), nullable=False, server_default=func.now(), onupdate=func.now()
     )

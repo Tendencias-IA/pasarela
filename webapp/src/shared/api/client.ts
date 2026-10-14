@@ -4,7 +4,8 @@ import { ApiError, toApiError } from "./problem";
  * Cliente HTTP único de la webapp (ver .claude/rules/webapp.md).
  * - Mismo origen: la cookie de sesión viaja sola; nunca se guarda en localStorage.
  * - Toda mutación lleva `X-Requested-With: fetch` (defensa CSRF, ver security.md).
- * - Un 401 `session_expired` redirige al login; el resto se propaga como ApiError.
+ * - Un 401 `invalid_session` (sesión ausente, vencida o revocada) redirige al login; el
+ *   resto se propaga como ApiError.
  */
 export interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -39,7 +40,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   if (!response.ok) {
     const error = await toApiError(response);
-    if (error.status === 401 && error.code === "session_expired") onSessionExpired();
+    if (error.status === 401 && error.code === "invalid_session") onSessionExpired();
     throw error;
   }
   if (response.status === 204) return undefined as T;

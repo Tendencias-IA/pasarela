@@ -1,6 +1,6 @@
 """Integración de /api/v1/auth/login contra MySQL real (testing.md).
 
-HU-02: ver specs/001-iniciar-sesion/spec.md para los criterios de aceptación citados.
+HU-02: ver specs/001-ppa-2-iniciar-sesion/spec.md para los criterios de aceptación citados.
 """
 
 from __future__ import annotations

@@ -9,6 +9,97 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/wallet/recharges:
+    post:
+      operationId: createRecharge
+      summary: Acreditar una recarga simulada en la billetera del usuario autenticado (HU-08)
+      tags: [wallet]
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID v4 generado por la webapp por intento; repetirlo reproduce la respuesta original.
+          schema:
+            type: string
+            format: uuid
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RechargeIn"
+            examples:
+              valida:
+                value: { amount: "50000.00" }
+      responses:
+        "201":
+          description: Recarga aplicada (o reproducida si la clave ya existía; ver cabecera Idempotent-Replayed)
+          headers:
+            Idempotent-Replayed:
+              description: Presente con valor "true" cuando la respuesta se reprodujo desde una solicitud anterior.
+              schema: { type: string, enum: ["true"] }
+            X-Request-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RechargeOut"
+              examples:
+                exitosa:
+                  value:
+                    id: 8812
+                    type: recarga
+                    status: exitosa
+                    amount: "50000.00"
+                    balance_after: "50000.00"
+                    created_at: "2026-10-14T21:40:00Z"
+        "400":
+          description: Falta la cabecera Idempotency-Key o no es un UUID (code `missing_idempotency_key`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401":
+          description: Sin sesión válida (code `invalid_session`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Falta X-Requested-With (code `missing_requested_with`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: El usuario no tiene billetera (code `wallet_not_found`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: >
+            Monto inválido en formato (code `validation`, con `errors[]`), fuera de rango
+            (code `amount_out_of_range`) o misma Idempotency-Key con cuerpo distinto
+            (code `idempotency_key_mismatch`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                fuera_de_rango:
+                  value:
+                    type: https://pasarela.local/problems/amount_out_of_range
+                    title: Monto fuera de rango
+                    status: 422
+                    detail: El monto debe estar entre 5000.00 y 5000000.00 COP.
+                    instance: /api/v1/wallet/recharges
+                    code: amount_out_of_range
+                    request_id: 7f1c9b2e
+                    errors: [{ field: amount, message: "Debe estar entre 5000.00 y 5000000.00" }]
   /health:
     get:
       summary: Estado del servicio, sin sesión
@@ -135,7 +226,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
   schemas:
+    Money:
+      type: string
+      description: Monto en COP como cadena decimal con exactamente dos decimales.
+      pattern: "^\\d{1,13}\\.\\d{2}$"
+      example: "50000.00"
+    RechargeIn:
+      type: object
+      required: [amount]
+      additionalProperties: false
+      properties:
+        amount:
+          type: string
+          description: Entre 5000.00 y 5000000.00 inclusive; hasta dos decimales; siempre cadena.
+          pattern: "^\\d{1,13}(\\.\\d{1,2})?$"
+          example: "50000.00"
+    RechargeOut:
+      type: object
+      required: [id, type, status, amount, balance_after, created_at]
+      properties:
+        id: { type: integer, format: int64 }
+        type: { type: string, enum: [recarga] }
+        status: { type: string, enum: [exitosa] }
+        amount: { $ref: "#/components/schemas/Money" }
+        balance_after: { $ref: "#/components/schemas/Money" }
+        created_at: { type: string, format: date-time }
     LoginIn:
       type: object
       required: [phone, password]

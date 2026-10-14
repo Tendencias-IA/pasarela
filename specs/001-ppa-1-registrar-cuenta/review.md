@@ -2,22 +2,26 @@
 
 ## Integración
 
-Base: `main` en `a6d32fa`, que incluye el login de HU-02. Se conserva el módulo
+Base: `main` en `9059f61`, que incluye login HU-02 y recarga HU-08. Se conserva el módulo
 de autenticación, su interfaz y el scaffold oficial. El formulario se expone en
 `/registro` y enlaza a `/login`; el registro no inicia sesión.
 
-La migración `0002_users_wallets` se aplica después de
-`0001_create_users_and_sessions`. Añade los datos de perfil y la billetera, con
+La migración `0003_users_registration` se aplica después de
+`0002_wallet_tables`. Reutiliza la billetera de HU-08 y añade los datos de perfil, con
 saldo `DECIMAL(15,2)` inicial `0.00`. Los datos de perfil son obligatorios para
 registrarse, pero anulables en almacenamiento para conservar los usuarios
 preexistentes del login.
 
 ## Evidencia local
 
-- Suite completa de API aprobada contra MySQL Docker; cobertura 97,48 %.
+- API después de integrar HU-08: pruebas ejecutadas aprobadas y cobertura 94,94 %.
+  Los tests de HU-01 y login usan MySQL Docker; 21 casos de HU-08 marcados por
+  main para MySQL externo se omiten sin `DATABASE_URL` MySQL al iniciar pytest.
 - Ruff y mypy aprobados.
 - TypeScript, lint y build del frontend aprobados.
-- Vitest: 20 pruebas aprobadas, incluyendo registro, login y cliente HTTP.
+- Vitest antes de integrar HU-08: 20 pruebas aprobadas. Después del merge,
+  el panel inicial presentó un timeout de hidratación; se amplió la espera
+  explícita a cinco segundos conservando las aserciones y se vuelve a comprobar.
 - Playwright de HU-01: alta exitosa y rechazo en escritorio y móvil; las
   respuestas HTTP se simulan para comprobar interfaz y accesibilidad.
 

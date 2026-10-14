@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import logging
+
+import pytest
+from flask import Flask
 from flask.testing import FlaskClient
 
 
@@ -17,9 +21,15 @@ def test_request_id_is_generated_when_absent(client: FlaskClient) -> None:
     assert len(response.headers["X-Request-Id"]) == 12
 
 
-# NOTA: se retiró aquí `test_slow_request_is_logged_as_warning` por pedido explícito
-# del usuario para desbloquear el push ya. Se volvió intermitente al correr junto con
-# el resto de la suite: `caplog` depende de ser el único handler nuevo del logger raíz
-# durante el test, y al crecer la suite con más llamadas a create_app() antes de este
-# test, el orden de inicialización del logging deja de garantizarlo. El comportamiento
-# en sí (request.slow en WARNING) no cambió.
+def test_slow_request_is_logged_as_warning(
+    app: Flask, client: FlaskClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Estable de nuevo: migrations/env.py ya no desactiva los loggers existentes."""
+    app.config["SLOW_REQUEST_MS"] = -1
+
+    with caplog.at_level(logging.INFO, logger="app.access"):
+        client.get("/health")
+
+    records = [r for r in caplog.records if r.name == "app.access"]
+    assert records[-1].levelno == logging.WARNING
+    assert records[-1].getMessage() == "request.slow"

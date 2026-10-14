@@ -86,7 +86,7 @@ comportamiento aún no implementado, no por errores de configuración.
 
 - [X] T024 [P] [US1] Extender el `User` compartido con login: mantener `id`, `phone` y `password_hash`; añadir `full_name VARCHAR(100)`, `national_id VARCHAR(20)` y `email VARCHAR(254)` obligatorios en el contrato HU-01 pero anulables en almacenamiento para usuarios preexistentes de HU-02; conservar normalización, unicidad e inmutabilidad, en `api/app/modules/accounts/models.py`
 - [X] T025 [P] [US1] Implementar `Wallet` con `id BIGINT` generado; `user_id BIGINT` requerido, FK restrictiva y único; `balance DECIMAL(15,2)` requerido, default `0.00` y `CHECK balance >= 0`; timestamps UTC generados por servidor, en `api/app/modules/wallet/models.py`
-- [X] T026 [US1] Encadenar HU-01 después de `0001_create_users_and_sessions`: extender `users` sin recrearla y crear `wallets` con `uq_users_email`, `uq_users_national_id`, `pk_wallets`, `uq_wallets_user_id`, `fk_wallets_user_id_users` y `ck_wallets_balance_nonnegative`, en `api/migrations/versions/0002_extend_users_and_create_wallets.py`
+- [X] T026 [US1] Encadenar HU-01 después de `0002_wallet_tables` de HU-08: extender `users` con `uq_users_email` y `uq_users_national_id` sin recrear `users` ni `wallets`, en `api/migrations/versions/0003_extend_users_registration.py`
 
 ### API implementation for User Story 1
 

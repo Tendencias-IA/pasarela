@@ -23,8 +23,8 @@ Owned by the `accounts` module.
 - Unique: `uq_users_national_id (national_id)`.
 - The service canonicalizes values before insertion; constraints remain the authority
   for concurrent requests.
-- `0002_users_wallets` extends the `users` table created by the login migration
-  `0001_create_users_and_sessions`; it does not create a second `users` table.
+- `0003_users_registration` extends `users` after `0002_wallet_tables` from HU-08;
+  it reuses the existing `wallets` table and does not recreate either table.
 
 ### Invariants
 

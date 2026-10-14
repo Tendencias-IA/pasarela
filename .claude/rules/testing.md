@@ -58,8 +58,9 @@ omit = ["app/__main__.py", "migrations/*", "*/tests/*"]
   `threading.Barrier` intentan gastar el mismo saldo; exactamente una pasa y el saldo
   final nunca es negativo (RNF-04.2). Y de idempotencia: misma clave dos veces produce
   un solo movimiento; misma clave con otro cuerpo responde `422` (ADR-0005).
-- Pruebas de contrato con `schemathesis` apuntando a `openapi.yaml` contra la app de
-  pruebas; cualquier respuesta fuera de contrato falla.
+- Pruebas de contrato en `tests/contract/`: cargan `openapi.yaml` con `pyyaml` y validan
+  cada respuesta de la app de pruebas contra su schema con `jsonschema`; cualquier
+  respuesta fuera de contrato falla (ejemplo: `tests/contract/test_openapi_recharges.py`).
 
 ```python
 def test_confirm_transfer_concurrent_requests_never_overdraw(db_session, two_users):
