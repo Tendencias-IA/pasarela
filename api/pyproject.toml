@@ -48,6 +48,7 @@ select = ["E", "F", "I", "B", "UP", "S", "N", "SIM"]
 "tests/**" = ["S101", "S105", "S106", "S107"]
 "migrations/**" = ["E501", "I001"]
 "app/modules/**/tests/**" = ["S101", "S105", "S106", "S107"]
+"app/common/tests/**" = ["S101", "S105", "S106", "S107"]
 "scripts/**" = ["S105"]
 
 [tool.mypy]
