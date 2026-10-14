@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getProfile, updatePhone } from "./api";
+import { getProfile, updateEmail, updatePhone } from "./api";
 
 export function useProfile() {
   const client = useQueryClient();
@@ -11,5 +11,11 @@ export function useProfile() {
       client.setQueryData(["profile"], result);
     },
   });
-  return { profile, changePhone };
+  const changeEmail = useMutation({
+    mutationFn: updateEmail,
+    onSuccess(result) {
+      client.setQueryData(["profile"], result);
+    },
+  });
+  return { profile, changePhone, changeEmail };
 }

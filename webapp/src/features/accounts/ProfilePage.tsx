@@ -15,11 +15,12 @@ import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { ApiError } from "../../shared/api/client";
+import { EmailEditor } from "./EmailEditor";
 import { useProfile } from "./useProfile";
 
 /** PPA-12 / HU-12: editar solo el teléfono de la cuenta autenticada. */
 export function ProfilePage() {
-  const { profile, changePhone } = useProfile();
+  const { profile, changePhone, changeEmail } = useProfile();
   const [editing, setEditing] = useState(false);
   const title = useRef<HTMLHeadingElement>(null);
   const submitting = useRef(false);
@@ -111,12 +112,18 @@ export function ProfilePage() {
                   />
                 </IonItem>
               </IonList>
+              <EmailEditor
+                email={data.email}
+                mutation={changeEmail}
+                disabled={editing || changePhone.isPending}
+              />
               {!editing ? (
                 <>
                   <p>
                     Teléfono actual: <span>{data.phone}</span>
                   </p>
                   <IonButton
+                    disabled={changeEmail.isPending}
                     onClick={() => {
                       reset({ phone: data.phone });
                       changePhone.reset();

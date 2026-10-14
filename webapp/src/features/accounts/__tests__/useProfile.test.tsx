@@ -17,6 +17,49 @@ function wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>;
 }
 describe("HU-12 perfil", () => {
+  it("HU-13 CA-3 y CA-4 actualiza el correo conservando el teléfono", async () => {
+    server.use(
+      http.get("/api/v1/profile", () => HttpResponse.json(profile)),
+      http.patch("/api/v1/profile", () =>
+        HttpResponse.json({ ...profile, email: "nuevo@example.test" }),
+      ),
+    );
+    const { result } = renderHook(() => useProfile(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.profile.isSuccess).toBe(true);
+    });
+    await act(async () => {
+      await result.current.changeEmail.mutateAsync("nuevo@example.test");
+    });
+    await waitFor(() => {
+      expect(result.current.profile.data?.email).toBe("nuevo@example.test");
+    });
+    expect(result.current.profile.data?.phone).toBe(profile.phone);
+  });
+  it("HU-13 CA-2 y CA-6 conserva el correo rechazado", async () => {
+    server.use(
+      http.get("/api/v1/profile", () => HttpResponse.json(profile)),
+      http.patch("/api/v1/profile", () =>
+        HttpResponse.json(
+          {
+            type: "https://pasarela.local/problems/duplicate_identity",
+            title: "Duplicado",
+            status: 409,
+            code: "duplicate_identity",
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+    const { result } = renderHook(() => useProfile(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.profile.isSuccess).toBe(true);
+    });
+    await act(async () => {
+      await expect(result.current.changeEmail.mutateAsync("otra@example.test")).rejects.toThrow();
+    });
+    expect(result.current.profile.data?.email).toBe(profile.email);
+  });
   it("CA-3 y CA-4 actualiza la caché después de guardar", async () => {
     server.use(
       http.get("/api/v1/profile", () => HttpResponse.json(profile)),
