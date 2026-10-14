@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registrar una cuenta y su billetera con saldo inicial de $0 COP (HU-01) */
+        post: operations["registerAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -45,6 +62,23 @@ export interface components {
         LoginIn: {
             phone: string;
             password: string;
+        };
+        RegisterAccountRequest: {
+            full_name: string;
+            phone: string;
+            national_id: string;
+            /** Format: email */
+            email: string;
+            /** Format: password */
+            password: string;
+        };
+        RegisterAccountResponse: {
+            /** Format: int64 */
+            account_id: number;
+            wallet: {
+                /** @enum {string} */
+                balance: "0.00";
+            };
         };
         Problem: {
             type: string;
@@ -148,6 +182,77 @@ export interface operations {
             };
             /** @description Demasiados intentos de inicio de sesión */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    registerAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Requested-With": "fetch";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Cuenta y billetera creadas de forma atómica, sin iniciar sesión */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterAccountResponse"];
+                };
+            };
+            /** @description Cuerpo JSON inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Teléfono, correo o identificación ya registrados */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Cuerpo superior al límite de 16 KB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Uno o más campos ausentes o inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Error inesperado sin persistencia parcial */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

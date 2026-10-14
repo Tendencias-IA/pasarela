@@ -7,13 +7,14 @@ import {
   IonTitle,
   IonToolbar,
 } from "@ionic/react";
-import { IonReactRouter } from "@ionic/react-router";
 import { useEffect, useState } from "react";
 import { Route } from "react-router-dom";
 
+import { RegisterPage } from "../features/accounts/RegisterPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { ApiError } from "../shared/api/client";
 import { getHealth, type Health } from "./health";
+import { AppProviders } from "./providers";
 
 type State =
   { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "error"; message: string };
@@ -21,12 +22,13 @@ type State =
 export function App() {
   return (
     <IonApp>
-      <IonReactRouter>
+      <AppProviders>
         <IonRouterOutlet>
+          <Route path="/registro" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<HealthStatusPage />} />
         </IonRouterOutlet>
-      </IonReactRouter>
+      </AppProviders>
     </IonApp>
   );
 }
