@@ -160,7 +160,7 @@ def test_without_session_is_rejected_and_nothing_is_written(
     response = _post(client, "5000.00")
 
     assert response.status_code == 401
-    assert response.get_json()["code"] == "invalid_session"
+    assert response.get_json()["code"] == "unauthenticated"
     assert _transactions() == []
 
 

@@ -16,8 +16,8 @@ from pydantic import (
 from pydantic_core import ErrorDetails
 
 from app.common.errors import ValidationError
-from app.common.money import parse_amount
-from app.modules.wallet.service import RechargeResult
+from app.common.money import parse_amount, to_json
+from app.modules.wallet.service import BalanceResult, RechargeResult
 
 
 class RechargeIn(BaseModel):
@@ -71,3 +71,11 @@ class RechargeOut(BaseModel):
     @classmethod
     def from_result(cls, result: RechargeResult) -> RechargeOut:
         return cls.model_validate(result.to_body())
+
+
+class BalanceOut(BaseModel):
+    balance: str
+
+    @classmethod
+    def from_result(cls, result: BalanceResult) -> BalanceOut:
+        return cls.model_validate({"balance": to_json(result.balance)})

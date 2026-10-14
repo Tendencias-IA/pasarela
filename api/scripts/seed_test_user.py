@@ -15,8 +15,8 @@ from app.modules.accounts.models import User
 from app.modules.accounts.repository import get_by_phone
 from app.modules.wallet import service as wallet_service
 
-PHONE = "3009876543"
-PASSWORD = "Clave1234"
+PHONE = "3008013627"
+PASSWORD = "MainKilljoy123456"
 
 
 def main() -> None:

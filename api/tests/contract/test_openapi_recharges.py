@@ -29,6 +29,19 @@ def _validate(spec: dict[str, Any], schema_name: str, body: Any) -> None:
 
 
 @pytest.mark.mysql
+def test_wallet_balance_200_matches_balance_out_schema(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser], spec: dict[str, Any]
+) -> None:
+    service.create_wallet(1)
+
+    response = logged_in_client.get("/api/v1/wallet")
+
+    assert response.status_code == 200
+    _validate(spec, "BalanceOut", response.get_json())
+    assert "200" in spec["paths"]["/api/v1/wallet"]["get"]["responses"]
+
+
+@pytest.mark.mysql
 def test_recharge_201_matches_recharge_out_schema(
     logged_in_client: FlaskClient, seeded_users: list[SeededUser], spec: dict[str, Any]
 ) -> None:

@@ -77,7 +77,7 @@ test.describe("HU-08 Recargar saldo", () => {
       route.fulfill({
         status: 401,
         contentType: "application/problem+json",
-        body: JSON.stringify({ type: "t", title: "Sesión", status: 401, code: "invalid_session" }),
+        body: JSON.stringify({ type: "t", title: "Sesión", status: 401, code: "unauthenticated" }),
       }),
     );
     await recharge.goto();

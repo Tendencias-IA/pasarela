@@ -37,7 +37,7 @@ class InvalidCredentialsError(AppError):
 
 class InvalidSessionError(AppError):
     status = 401
-    code = "invalid_session"
+    code = "unauthenticated"
     title = "No hay una sesión válida"
 
 

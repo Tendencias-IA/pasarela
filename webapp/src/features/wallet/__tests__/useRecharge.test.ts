@@ -195,7 +195,7 @@ describe("useRecharge (HU-08)", () => {
   it("invoca el manejador de sesión expirada ante 401 invalid_session (HU-04 CA-2)", async () => {
     const handler = vi.fn();
     setSessionExpiredHandler(handler);
-    server.use(http.post(URL, () => problem(401, "invalid_session", "Sesión vencida.")));
+    server.use(http.post(URL, () => problem(401, "unauthenticated", "Sesión vencida.")));
     const { result } = renderHook(() => useRecharge());
 
     act(() => {

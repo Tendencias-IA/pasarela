@@ -56,19 +56,19 @@ describe("request", () => {
     await expect(request("/api/v1/wallet")).rejects.toBeInstanceOf(ApiError);
   });
 
-  it("invoca el manejador de sesión expirada ante 401 invalid_session", async () => {
+  it("invoca el manejador de sesión expirada ante 401 unauthenticated", async () => {
     const handler = vi.fn();
     setSessionExpiredHandler(handler);
     server.use(
       http.get("/api/v1/profile", () =>
         HttpResponse.json(
-          { type: "t", title: "Sesión", status: 401, code: "invalid_session" },
+          { type: "t", title: "Sesión", status: 401, code: "unauthenticated" },
           { status: 401 },
         ),
       ),
     );
 
-    await expect(request("/api/v1/profile")).rejects.toMatchObject({ code: "invalid_session" });
+    await expect(request("/api/v1/profile")).rejects.toMatchObject({ code: "unauthenticated" });
     expect(handler).toHaveBeenCalledOnce();
   });
 });

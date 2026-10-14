@@ -72,6 +72,21 @@ class RechargeResult:
         }
 
 
+@dataclass(frozen=True)
+class BalanceResult:
+    balance: Decimal
+
+
+def get_balance(
+    user_id: int, repo: WalletRepository = default_repository
+) -> BalanceResult:
+    """Devuelve el saldo persistido de la billetera del usuario autenticado (HU-05)."""
+    wallet = repo.get_wallet_by_user(user_id)
+    if wallet is None:
+        raise WalletNotFoundError("El usuario no tiene una billetera asociada.")
+    return BalanceResult(balance=wallet.balance)
+
+
 def get_wallet_id(user_id: int, repo: WalletRepository = default_repository) -> int | None:
     """Id de la billetera del usuario, o None si no tiene (sin abrir transacción propia)."""
     wallet = repo.get_wallet_by_user(user_id)

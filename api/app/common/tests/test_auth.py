@@ -21,7 +21,7 @@ def test_private_route_rejects_requests_without_session(app: Flask, client: Flas
     response = client.get("/_privada")
 
     assert response.status_code == 401
-    assert response.get_json()["code"] == "invalid_session"
+    assert response.get_json()["code"] == "unauthenticated"
 
 
 def test_private_route_uses_user_id_set_by_auth_layer(app: Flask, client: FlaskClient) -> None:

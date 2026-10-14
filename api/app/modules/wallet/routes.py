@@ -7,9 +7,16 @@ from flask import Blueprint, Response, g, jsonify, request
 from app.common.auth import current_user_id, login_required
 from app.common.idempotency import find_existing, idempotent, replay_response
 from app.modules.wallet import service
-from app.modules.wallet.schemas import RechargeIn, RechargeOut
+from app.modules.wallet.schemas import BalanceOut, RechargeIn, RechargeOut
 
 bp = Blueprint("wallet", __name__)
+
+
+@bp.get("")
+@login_required
+def get_balance() -> Response:
+    result = service.get_balance(current_user_id())
+    return jsonify(BalanceOut.from_result(result).model_dump())
 
 
 @bp.post("/recharges")

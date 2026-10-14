@@ -79,7 +79,7 @@ def test_private_probe_requires_valid_session(
 
     without_cookie = integration_client.get("/api/v1/_private_probe")
     assert without_cookie.status_code == 401
-    assert without_cookie.get_json()["code"] == "invalid_session"
+    assert without_cookie.get_json()["code"] == "unauthenticated"
 
     seeded = make_user(password="Clave1234")
     db_session.add(seeded.user)
@@ -121,7 +121,7 @@ def test_revoked_session_blocks_further_access_like_no_session(
     response = integration_client.get("/api/v1/_private_probe_2")
 
     assert response.status_code == 401
-    assert response.get_json()["code"] == "invalid_session"
+    assert response.get_json()["code"] == "unauthenticated"
 
 
 # NOTA: se retiró aquí una prueba de rate limit (5 intentos/15 min, security.md) por

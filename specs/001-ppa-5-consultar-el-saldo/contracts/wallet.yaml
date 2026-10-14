@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Pasarela API - Wallet contract
+  version: "0.1.0"
+paths:
+  /api/v1/wallet:
+    get:
+      summary: Consultar el saldo de la billetera de la sesión activa (HU-05)
+      operationId: getWalletBalance
+      responses:
+        "200":
+          description: Saldo disponible de la única billetera del usuario autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [balance]
+                properties:
+                  balance:
+                    type: string
+                    pattern: "^-?[0-9]+\\.[0-9]{2}$"
+                    example: "150000.00"
+        "401":
+          description: No existe una sesión válida (code `unauthenticated`)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../../../api/openapi.yaml#/components/schemas/Problem"
+        "404":
+          description: La cuenta autenticada no tiene una billetera asociada
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../../../api/openapi.yaml#/components/schemas/Problem"
+
