@@ -212,4 +212,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ steps.token.outputs.token }}
           SONAR_HOST_URL: http://localhost:9000
+      - name: Detalle del quality gate
+        if: always()
+        env:
+          SONAR_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/qualitygates/project_status?projectKey=pasarela" \
+            | jq -r '.projectStatus as $p | "Estado: \($p.status)", ($p.conditions[] | "  \(.status)  \(.metricKey)=\(.actualValue // "sin medida")  (umbral \(.comparator) \(.errorThreshold))")'
+          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/measures/component?component=pasarela&metricKeys=coverage,lines_to_cover,uncovered_lines,duplicated_lines_density,bugs,vulnerabilities,code_smells,security_hotspots" \
+            | jq -r '.component.measures[] | "  \(.metric)=\(.value)"'
 
