@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consultar el saldo de la billetera del usuario autenticado (HU-05) */
+        get: operations["getWallet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallet/recharges": {
         parameters: {
             query?: never;
@@ -81,6 +98,9 @@ export interface components {
          * @example 50000.00
          */
         Money: string;
+        WalletOut: {
+            balance: components["schemas"]["Money"];
+        };
         RechargeIn: {
             /**
              * @description Entre 5000.00 y 5000000.00 inclusive; hasta dos decimales; siempre cadena.
@@ -163,6 +183,45 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saldo disponible de la única billetera del usuario de la sesión (HU-05 CA-1, CA-2) */
+            200: {
+                headers: {
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletOut"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description El usuario no tiene billetera asociada (code `wallet_not_found`); se registra el error técnico (HU-05 CA-5) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createRecharge: {
         parameters: {
             query?: never;

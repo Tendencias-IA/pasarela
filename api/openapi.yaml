@@ -9,6 +9,36 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/wallet:
+    get:
+      operationId: getWallet
+      summary: Consultar el saldo de la billetera del usuario autenticado (HU-05)
+      tags: [wallet]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Saldo disponible de la única billetera del usuario de la sesión (HU-05 CA-1, CA-2)
+          headers:
+            X-Request-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletOut"
+              examples:
+                disponible:
+                  value: { balance: "150000.00" }
+        "401":
+          description: Sin sesión válida (code `invalid_session`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: El usuario no tiene billetera asociada (code `wallet_not_found`); se registra el error técnico (HU-05 CA-5)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
   /api/v1/wallet/recharges:
     post:
       operationId: createRecharge
@@ -243,6 +273,11 @@ components:
       description: Monto en COP como cadena decimal con exactamente dos decimales.
       pattern: "^\\d{1,13}\\.\\d{2}$"
       example: "50000.00"
+    WalletOut:
+      type: object
+      required: [balance]
+      properties:
+        balance: { $ref: "#/components/schemas/Money" }
     RechargeIn:
       type: object
       required: [amount]
