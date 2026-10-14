@@ -13,7 +13,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import "./auth.css";
 import { useLogin } from "./useLogin";
 
-const PHONE_PATTERN = /^3[0-9]{9}$/;
+const PHONE_PATTERN = /^3\d{9}$/;
 
 /** HU-02: iniciar sesión con teléfono y contraseña. Diseño del equipo (pantalla Iniciar sesión). */
 export function LoginPage() {
