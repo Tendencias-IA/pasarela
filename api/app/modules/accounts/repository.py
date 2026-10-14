@@ -38,3 +38,21 @@ def create(data: RegisterAccountIn, password_hash: str) -> User:
     db.session.add(user)
     db.session.flush()
     return user
+
+
+def get_by_id(user_id: int, *, lock: bool = False) -> User | None:
+    statement = select(User).where(User.id == user_id)
+    if lock:
+        statement = statement.with_for_update()
+    return db.session.execute(statement).scalar_one_or_none()
+
+
+def phone_registered_elsewhere(user_id: int, phone: str) -> bool:
+    statement = select(User.id).where(User.phone == phone, User.id != user_id).limit(1)
+    return db.session.execute(statement).scalar_one_or_none() is not None
+
+
+def update_phone(user: User, phone: str) -> None:
+    """HU-12 CA-6: modificar solo el teléfono y su timestamp automático."""
+    user.phone = phone
+    db.session.flush()

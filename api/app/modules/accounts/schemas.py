@@ -71,3 +71,15 @@ class RegisterAccountOut(BaseModel):
 
     def response_body(self) -> dict[str, Any]:
         return {"account_id": self.account_id, "wallet": {"balance": self.balance}}
+
+
+class UpdatePhoneIn(BaseModel):
+    """HU-12 CA-1: la misma regla de teléfono de HU-01."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    phone: str
+
+    @field_validator("phone")
+    @classmethod
+    def valid_phone(cls, value: str) -> str:
+        return RegisterAccountIn.valid_phone(value)

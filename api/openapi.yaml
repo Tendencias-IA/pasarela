@@ -225,6 +225,76 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /api/v1/profile:
+    get:
+      operationId: getProfile
+      summary: Consultar el perfil propio para editar el teléfono
+      responses:
+        "200":
+          description: Perfil propio, sin contraseña
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    patch:
+      operationId: updatePhone
+      summary: Actualizar el teléfono propio (HU-12)
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePhoneRequest"
+      responses:
+        "200":
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Teléfono ya registrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Campo ausente, inválido o no editable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   securitySchemes:
     sessionCookie:
@@ -232,6 +302,30 @@ components:
       in: cookie
       name: session
   schemas:
+    UpdatePhoneRequest:
+      type: object
+      additionalProperties: false
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          pattern: "^3[0-9]{9}$"
+    AccountProfile:
+      type: object
+      additionalProperties: false
+      required: [full_name, phone, national_id, email]
+      properties:
+        full_name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        national_id:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
     Money:
       type: string
       description: Monto en COP como cadena decimal con exactamente dos decimales.
