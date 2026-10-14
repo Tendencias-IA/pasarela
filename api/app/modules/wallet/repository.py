@@ -113,3 +113,16 @@ class SqlWalletRepository:
 
 
 default_repository: WalletRepository = SqlWalletRepository()
+
+
+class SessionLike(Protocol):
+    def add(self, instance: object) -> None: ...
+
+    def flush(self) -> None: ...
+
+
+def create_for_user(user_id: int, session: SessionLike) -> Wallet:
+    wallet = Wallet(user_id=user_id, balance=Decimal("0.00"))
+    session.add(wallet)
+    session.flush()
+    return wallet

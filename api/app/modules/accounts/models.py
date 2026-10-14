@@ -21,6 +21,9 @@ class User(db.Model):  # type: ignore[name-defined,misc]
     id: Mapped[int] = mapped_column(primary_key=True)
     phone: Mapped[str] = mapped_column(db.String(10), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(db.String(100), nullable=True)
+    national_id: Mapped[str | None] = mapped_column(db.String(20), nullable=True, unique=True)
+    email: Mapped[str | None] = mapped_column(db.String(254), nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
