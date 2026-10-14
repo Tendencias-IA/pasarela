@@ -6,6 +6,9 @@ import { RechargePage } from "./pages/recharge.page";
 
 test.describe("HU-08 Recargar saldo", () => {
   test("desde el panel se llega a Recargar en un clic (RNF-03.1)", async ({ page }) => {
+    const login = new LoginPage(page);
+    await login.goto();
+    await login.signIn("3009876543", "Clave1234");
     await page.goto("/");
     await page.getByRole("link", { name: "Recargar saldo" }).click();
 
@@ -84,7 +87,7 @@ test.describe("HU-08 Recargar saldo", () => {
     await recharge.fillAmount("50000");
     await recharge.submit();
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login(\?.*)?$/);
   });
 
   test("CA-3, CA-4, CA-9: con sesión real la recarga aumenta el saldo y muestra el resultado", async ({

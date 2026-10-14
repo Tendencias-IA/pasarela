@@ -47,7 +47,7 @@ test.describe("HU-09 Historial de movimientos", () => {
   test("HU-04 CA-2, RNF-01.1: sin sesión, /movimientos redirige a /login", async ({ page }) => {
     await new MovementsPage(page).goto();
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login(\?.*)?$/);
   });
 
   test("CA-1, CA-2, CA-4, SC-007: una recarga aparece de primera en el historial", async ({

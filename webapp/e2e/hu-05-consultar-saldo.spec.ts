@@ -33,7 +33,7 @@ test.describe("HU-05 Consultar el saldo", () => {
   }) => {
     await page.goto("/");
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login(\?.*)?$/);
   });
 
   test("SC-006: el panel con saldo no tiene violaciones serias de accesibilidad", async ({
