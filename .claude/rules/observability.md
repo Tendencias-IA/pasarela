@@ -62,6 +62,6 @@ por campo.
 
 ## Local
 
-- `docker compose up` levanta MySQL y la API; los logs JSON se ven con `docker compose
-  logs -f api | jq`. No se añade stack de observabilidad (Prometheus, Grafana) al
+- `docker compose --profile app up` levanta MySQL, la API y la webapp; los logs JSON se
+  ven con `docker compose logs -f api | jq` (ver `docker.md`). No se añade stack de observabilidad (Prometheus, Grafana) al
   prototipo; los logs estructurados son suficientes para el alcance.

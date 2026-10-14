@@ -49,8 +49,10 @@ Guía paso a paso con ejemplo: `docs/sdd-workflow.md`.
 cd api && ruff format . && ruff check . && mypy app && pytest
 # webapp
 cd webapp && npm run lint && npm run typecheck && npm run test && npm run e2e
-# base de datos local
+# base de datos local (cp .env.example .env la primera vez)
 docker compose up -d mysql && cd api && flask db upgrade
+# todo en contenedores
+docker compose --profile app up --build
 ```
 
 ## Reglas por tema
@@ -66,6 +68,7 @@ docker compose up -d mysql && cd api && flask db upgrade
 | `.claude/rules/observability.md` | añades logs, métricas o manejo de errores |
 | `.claude/rules/git-workflow.md` | creas ramas, commits o un PR |
 | `.claude/rules/quality-gates.md` | el CI falla o quieres saber qué bloquea un merge |
+| `.claude/rules/docker.md` | tocas `docker/`, `docker-compose.yml` o un `Dockerfile` |
 | `docs/adr/` | quieres saber por qué se decidió algo o vas a proponer un cambio de fondo |
 
 ## Innegociables (resumen; el detalle está en las reglas)

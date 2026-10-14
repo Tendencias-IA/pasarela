@@ -14,7 +14,7 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | --- | --- |
 | `AGENTS.md` / `CLAUDE.md` | Punto de entrada para cualquier herramienta de IA. Léelo primero. |
 | `.specify/memory/constitution.md` | Constitución del proyecto: principios y gates innegociables. |
-| `.claude/rules/` | Reglas por tema: arquitectura, diseño de API, api, webapp, testing, seguridad, observabilidad, Git, quality gates. |
+| `.claude/rules/` | Reglas por tema: arquitectura, diseño de API, api, webapp, testing, seguridad, observabilidad, Git, quality gates, docker. |
 | `.claude/skills/speckit-*` | Comandos de Spec Kit (`/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement`). |
 | `docs/sdd-workflow.md` | Guía paso a paso para tomar un ticket de Jira y ejecutar el ciclo SDD. |
 | `docs/adr/` | Decisiones de arquitectura (ADR). |
@@ -23,12 +23,23 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | `api/` | API en Python + Flask (se crea al implementar la primera historia). |
 | `webapp/` | Aplicación web en React + Vite + TypeScript (se crea al implementar la primera historia). |
 | `.github/` | Plantilla de PR, CODEOWNERS y pipeline de CI. |
+| `docker-compose.yml`, `docker/` | MySQL local e imágenes de `api` y `webapp` (ver `.claude/rules/docker.md`). |
 
 ## Stack
 
 - `api/`: Python 3.12, Flask 3, SQLAlchemy 2, Alembic, MySQL 8.
 - `webapp/`: React 18, Vite, TypeScript, Vitest, Playwright.
 - Calidad: pytest con cobertura ≥ 90 %, Ruff, mypy, ESLint, Prettier, SonarQube.
+
+## Ejecutar con Docker
+
+```bash
+cp .env.example .env                      # una vez; ajusta los puertos si alguno está ocupado
+docker compose --profile app up --build   # MySQL + API + webapp en http://127.0.0.1:8080
+docker compose up -d mysql                # solo la base de datos, para desarrollar fuera de Docker
+```
+
+Detalles en `.claude/rules/docker.md`.
 
 ## Gestión
 
