@@ -11,10 +11,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Estado del servicio y de la base de datos */
-        get: operations["getHealth"];
+        /** Estado del servicio, sin sesión */
+        get: operations["health"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Iniciar sesión con teléfono y contraseña (HU-02) */
+        post: operations["login"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25,22 +42,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Health: {
-            /** @enum {string} */
-            status: "ok" | "degraded";
-            /** @enum {string} */
-            db: "ok" | "error";
+        LoginIn: {
+            phone: string;
+            password: string;
         };
-        /** @description Error en formato RFC 9457 */
         Problem: {
-            /** Format: uri */
             type: string;
             title: string;
             status: number;
             detail?: string;
-            instance?: string;
+            instance: string;
             code: string;
-            request_id?: string;
+            request_id?: string | null;
             errors?: {
                 field: string;
                 message: string;
@@ -55,7 +68,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
+    health: {
         parameters: {
             query?: never;
             header?: never;
@@ -64,22 +77,82 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Servicio sano */
+            /** @description El servicio y la base de datos responden */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Health"];
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "ok";
+                        /** @enum {string} */
+                        db: "ok";
+                    };
                 };
             };
-            /** @description Base de datos no disponible */
+            /** @description La base de datos no responde */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Health"];
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "degraded";
+                        /** @enum {string} */
+                        db: "error";
+                    };
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Sesión concedida (token en cookie `Set-Cookie`, sin cuerpo) */
+            204: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Credenciales incorrectas (mismo cuerpo para teléfono inexistente o contraseña errónea) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Teléfono o contraseña con formato inválido */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Demasiados intentos de inicio de sesión */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

@@ -14,16 +14,21 @@ access_log = logging.getLogger("app.access")
 
 
 def init_app(app: Flask) -> None:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        JsonFormatter(
-            "{asctime}{levelname}{name}{message}",
-            style="{",
-            rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger"},
-        )
-    )
     root = logging.getLogger()
-    root.handlers = [handler]
+    # Cada llamada a create_app() (una por test en la suite) no debe pisar otros
+    # handlers ya presentes en el logger raíz (p. ej. el de pytest `caplog`); se
+    # añade el propio una sola vez, identificable por este atributo.
+    if not any(getattr(h, "_pasarela_json", False) for h in root.handlers):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            JsonFormatter(
+                "{asctime}{levelname}{name}{message}",
+                style="{",
+                rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger"},
+            )
+        )
+        handler._pasarela_json = True  # type: ignore[attr-defined]
+        root.addHandler(handler)
     root.setLevel(app.config["LOG_LEVEL"])
 
     @app.before_request
