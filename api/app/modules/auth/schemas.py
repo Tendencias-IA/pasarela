@@ -20,3 +20,7 @@ class LoginIn(BaseModel):
 
 class LoginOut(BaseModel):
     user_id: int
+
+
+class SessionOut(BaseModel):
+    expires_at: str

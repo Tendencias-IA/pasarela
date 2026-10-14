@@ -13,6 +13,7 @@ export class LoginPage {
     await this.page.getByLabel("Teléfono").fill(phone);
     await this.page.getByLabel("Contraseña").fill(password);
     await this.page.getByRole("button", { name: "Iniciar sesión" }).click();
-    await expect(this.page.getByRole("status")).toContainText("Acceso verificado.");
+    // Tras iniciar sesión la webapp navega al panel.
+    await expect(this.page).toHaveURL(/\/$/);
   }
 }

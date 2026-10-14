@@ -16,7 +16,9 @@ export interface RequestOptions {
 
 export type SessionExpiredHandler = () => void;
 let onSessionExpired: SessionExpiredHandler = () => {
-  window.location.assign("/login");
+  // HU-04 CA-2: la operación privada exige iniciar sesión de nuevo; el aviso lo muestra
+  // la pantalla de login. Sin bucle si ya se está en /login.
+  if (window.location.pathname !== "/login") window.location.assign("/login?motivo=expirada");
 };
 
 export function setSessionExpiredHandler(handler: SessionExpiredHandler): void {
