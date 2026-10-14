@@ -7,3 +7,11 @@ export type LoginRequest = components["schemas"]["LoginIn"];
 export async function login(payload: LoginRequest, signal?: AbortSignal): Promise<void> {
   await request<undefined>("/api/v1/auth/login", { method: "POST", body: payload, signal });
 }
+
+export async function logout(): Promise<void> {
+  await request<undefined>("/api/v1/auth/logout", { method: "POST" });
+}
+
+export function getSession(signal?: AbortSignal) {
+  return request<components["schemas"]["SessionStatus"]>("/api/v1/auth/session", { signal });
+}
