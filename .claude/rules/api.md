@@ -92,9 +92,11 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
 - Funciones puras de módulo (no clases con estado) que reciben ids y valores de dominio y
   devuelven dataclasses `frozen=True` definidas en el mismo `service.py` o en
   `app/common/`. Nunca reciben `request` ni devuelven `Response`.
-- El servicio abre la transacción con `with db.session.begin():` cuando escribe. Los
-  servicios llamados desde otro servicio no abren ni cierran transacciones; reciben la
-  sesión implícita.
+- El servicio delimita la transacción con `with transaction():` (`app/extensions.py`)
+  cuando escribe: commit al salir, rollback si falla, y compatible con el autobegin de
+  Flask-SQLAlchemy (una lectura previa en la misma petición no lo rompe, a diferencia
+  de `db.session.begin()`). Los servicios llamados desde otro servicio no abren ni
+  cierran transacciones; participan en la del llamador.
 - Errores de negocio son excepciones que heredan de `AppError` (`app/common/errors.py`)
   con `status`, `code` y `detail`, nombradas con sufijo `Error` (regla N818 de Ruff): `InsufficientBalanceError`, `RecipientNotFoundError`,
   `SelfTransferError`, `AmountOutOfRangeError`, `DuplicateIdentityError`, `InvalidCredentialsError`,
@@ -111,7 +113,7 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
   escriben explícitos: `select(Wallet).where(Wallet.id.in_(ids)).order_by(Wallet.id)
   .with_for_update()`.
 - Sin `commit()` en repositorios. Sin `db.session` fuera de `repository.py` salvo el
-  `begin()` del servicio.
+  `transaction()` del servicio.
 - Toda modificación de esquema lleva una migración Alembic generada con `flask db
   migrate -m "ppa-n descripcion"` y revisada a mano (autogenerate olvida `CHECK` y
   tipos `DECIMAL`).

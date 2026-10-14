@@ -1,9 +1,90 @@
-/* Variables de tema de Ionic (ADR-0007). Ajustar aquí colores y tipografía, no en componentes. */
+/* Tema TAI (diseño del equipo, oct. 2026) sobre las variables de Ionic (ADR-0007).
+   Colores: tinta #12211D, apagado #5B6B63, fondo #F6F4EE, línea #E2DED3,
+   verde azulado #1F6F5C (primario), coral #C14E3A (rechazos). */
 :root {
-  --ion-color-primary: #1f6f8b;
-  --ion-color-primary-rgb: 31, 111, 139;
+  --ion-font-family: "Public Sans", system-ui, sans-serif;
+  --tai-font-display: "Space Grotesk", "Public Sans", sans-serif;
+
+  --ion-background-color: #f6f4ee;
+  --ion-background-color-rgb: 246, 244, 238;
+  --ion-text-color: #12211d;
+  --ion-text-color-rgb: 18, 33, 29;
+  --ion-item-background: #ffffff;
+  --ion-border-color: #e2ded3;
+  --ion-toolbar-background: #ffffff;
+  --ion-toolbar-color: #12211d;
+
+  --ion-color-primary: #1f6f5c;
+  --ion-color-primary-rgb: 31, 111, 92;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #1b627a;
-  --ion-color-primary-tint: #357d97;
+  --ion-color-primary-shade: #15503f;
+  --ion-color-primary-tint: #357d6c;
+
+  --ion-color-success: #15503f;
+  --ion-color-success-rgb: 21, 80, 63;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #12463a;
+  --ion-color-success-tint: #2d6252;
+
+  --ion-color-danger: #c14e3a;
+  --ion-color-danger-rgb: 193, 78, 58;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #aa4533;
+  --ion-color-danger-tint: #c7604e;
+
+  --ion-color-medium: #5b6b63;
+  --ion-color-medium-rgb: 91, 107, 99;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #505e57;
+  --ion-color-medium-tint: #6b7a73;
+
+  --tai-ink-soft: #3e4a44;
+  --tai-teal-tint: #e7f0ec;
+  --tai-coral-tint: #fbeae6;
+  --tai-radius: 14px;
+}
+
+.tai-card {
+  background: #ffffff;
+  border: 1px solid var(--ion-border-color);
+  border-radius: var(--tai-radius);
+  padding: 26px;
+  max-width: 480px;
+}
+
+.tai-title {
+  margin: 0 0 4px;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.tai-muted {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+}
+
+.tai-amount {
+  font-family: var(--tai-font-display);
+  font-weight: 600;
+}
+
+.tai-brand {
+  font-family: var(--tai-font-display);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 760px) {
+  .tai-card {
+    padding: 18px;
+  }
+  .tai-title {
+    font-size: 21px;
+  }
 }

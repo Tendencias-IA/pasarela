@@ -2,7 +2,7 @@
 
 Alcance de HU-02: solo los campos que `auth` necesita para verificar credenciales.
 HU-01 extiende esta tabla con full_name, national_id y email (ver
-specs/001-iniciar-sesion/research.md).
+specs/001-ppa-2-iniciar-sesion/research.md).
 """
 
 from __future__ import annotations

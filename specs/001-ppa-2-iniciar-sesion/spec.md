@@ -1,6 +1,6 @@
 # Feature Specification: Iniciar sesión
 
-**Feature Branch**: `001-iniciar-sesion`
+**Feature Branch**: `001-ppa-2-iniciar-sesion`
 
 **Created**: 2026-10-14
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { server } from "../../test/server";
 import { App } from "../App";
 
-describe("App", () => {
+describe("App (panel inicial)", () => {
   it("muestra el estado de la API cuando /health responde ok", async () => {
     render(<App />);
 
@@ -13,7 +13,10 @@ describe("App", () => {
 
     expect(status).toHaveAttribute("role", "status");
     expect(status).toHaveAttribute("data-health", "ok");
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Billetera Digital");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Billetera Digital" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Recargar saldo")).toBeInTheDocument();
   });
 
   it("muestra una alerta con el código cuando la API responde un problem", async () => {

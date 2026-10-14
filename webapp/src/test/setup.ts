@@ -4,6 +4,23 @@ import { afterAll, afterEach, beforeAll } from "vitest";
 
 import { server } from "./server";
 
+// jsdom no implementa matchMedia; Ionic lo consulta al montar algunos componentes.
+if (typeof window.matchMedia !== "function") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
 });

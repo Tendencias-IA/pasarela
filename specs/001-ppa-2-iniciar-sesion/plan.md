@@ -1,8 +1,8 @@
 # Implementation Plan: Iniciar sesión
 
-**Branch**: `001-iniciar-sesion` | **Date**: 2026-10-14 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-ppa-2-iniciar-sesion` | **Date**: 2026-10-14 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/001-iniciar-sesion/spec.md`
+**Input**: Feature specification from `/specs/001-ppa-2-iniciar-sesion/spec.md`
 
 ## Summary
 
@@ -44,7 +44,7 @@ funcionan como puerta de acceso (FR-005/FR-006), no la expiración por inactivid
 
 | Principio | Cumplimiento |
 | --- | --- |
-| I. Especificación antes de código | `spec.md` y este `plan.md` existen en `specs/001-iniciar-sesion/`; `tasks.md` se genera a continuación con `/speckit-tasks`. PASA. |
+| I. Especificación antes de código | `spec.md` y este `plan.md` existen en `specs/001-ppa-2-iniciar-sesion/`; `tasks.md` se genera a continuación con `/speckit-tasks`. PASA. |
 | II. Trazabilidad a requisitos | Cada regla del plan cita HU-02 CA-n o RNF-01.n; no se añade nada fuera de la spec. PASA. |
 | III. Pruebas primero y cobertura ≥ 90% | Tareas de prueba (unit de `accounts`/`auth`, integración con MySQL, contrato) se escriben antes del código en `tasks.md`. PASA (se verifica en `/speckit-implement`). |
 | IV. Monolito modular con vertical slicing | Dos módulos nuevos (`accounts`, `auth`) con su propia tabla; `auth` llama a `accounts.service.get_user_by_phone`, nunca a su repositorio. PASA. |
@@ -59,7 +59,7 @@ Sin violaciones; no se llena "Complexity Tracking".
 ### Documentation (this feature)
 
 ```text
-specs/001-iniciar-sesion/
+specs/001-ppa-2-iniciar-sesion/
 ├── plan.md              # este archivo
 ├── research.md          # Fase 0
 ├── data-model.md         # Fase 1

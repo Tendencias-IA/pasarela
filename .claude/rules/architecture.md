@@ -109,7 +109,7 @@ Toda escritura de saldo sigue este orden, sin excepción:
 ```python
 # Correcto
 try:
-    with db.session.begin():
+    with transaction():  # app.extensions.transaction: commit al salir, rollback si falla
         wallets = repository.lock_wallets([sender_id, receiver_id])  # SELECT ... FOR UPDATE ORDER BY id
         sender, receiver = wallets[sender_id], wallets[receiver_id]
         if sender.balance < amount:
@@ -118,7 +118,7 @@ try:
         receiver.balance += amount
         repository.add_transaction(..., status="exitosa")
 except AppError as exc:
-    with db.session.begin():                 # segunda transacción, ya sin bloqueos
+    with transaction():                      # segunda transacción, ya sin bloqueos
         repository.add_transaction(..., status="rechazada", rejection_reason=exc.code)
     raise
 ```
