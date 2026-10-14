@@ -1,0 +1,224 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["api/**", "webapp/**"]
+  push:
+    branches: [main]
+    paths: ["api/**", "webapp/**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API (ruff, mypy, pytest ≥ 90 %)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: pasarela_test
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ptest"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: api
+    env:
+      FLASK_APP: app
+      APP_CONFIG: testing
+      DATABASE_URL: mysql+pymysql://root:test@127.0.0.1:3306/pasarela_test
+      SECRET_KEY: ci-only-not-a-secret
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Formato y lint
+        run: |
+          ruff format --check .
+          ruff check . --output-format=json -o ruff-report.json || true
+          ruff check .
+      - name: Tipos
+        run: mypy app
+      - name: Migraciones
+        run: flask db upgrade
+      - name: Pruebas y cobertura (falla bajo 90 %)
+        run: pytest
+      - uses: actions/upload-artifact@v7
+        with:
+          name: api-coverage
+          path: |
+            api/coverage.xml
+            api/ruff-report.json
+
+  webapp:
+    name: Webapp (eslint, tsc, vitest, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test -- --coverage
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: webapp-coverage
+          path: webapp/coverage/lcov.info
+
+  e2e:
+    name: E2E Playwright (escritorio y móvil)
+    needs: [api, webapp]
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: pasarela_e2e
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ptest"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      FLASK_APP: app
+      APP_CONFIG: e2e
+      DATABASE_URL: mysql+pymysql://root:test@127.0.0.1:3306/pasarela_e2e
+      SECRET_KEY: ci-only-not-a-secret
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - run: pip install -e "./api[dev]"
+      - name: Migrar y levantar la API
+        run: |
+          cd api
+          flask db upgrade
+          gunicorn -b 127.0.0.1:5000 "app:create_app()" --daemon --pid /tmp/gunicorn.pid
+      - run: cd webapp && npm ci && npx playwright install --with-deps chromium
+      - name: Esperar a que la API responda
+        run: |
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:5000/health >/dev/null && exit 0
+            sleep 2
+          done
+          echo "::error::La API no respondió en /health tras 60 s"
+          exit 1
+      - run: cd webapp && npm run e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: webapp/playwright-report
+
+  sonar:
+    name: SonarQube quality gate
+    needs: [api, webapp]
+    runs-on: ubuntu-latest
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports: ["9000:9000"]
+        env:
+          SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "*-coverage"
+          merge-multiple: false
+      - name: Colocar reportes de cobertura
+        run: |
+          test -f api-coverage/coverage.xml || { echo "::error::Falta api-coverage/coverage.xml"; exit 1; }
+          cp api-coverage/coverage.xml api/
+          cp api-coverage/ruff-report.json api/ || true
+          test -f webapp-coverage/lcov.info || { echo "::error::Falta webapp-coverage/lcov.info"; exit 1; }
+          mkdir -p webapp/coverage && cp webapp-coverage/lcov.info webapp/coverage/
+      - name: Esperar SonarQube y crear token
+        id: token
+        env:
+          # Credencial por defecto de la imagen oficial de SonarQube; se reemplaza en el primer paso.
+          SONAR_BOOTSTRAP_AUTH: "admin:admin"
+        run: |
+          s=""
+          for _ in $(seq 1 60); do
+            s=$(curl -s http://localhost:9000/api/system/status | sed -n 's/.*"status":"\([A-Z]*\)".*/\1/p')
+            [ "$s" = "UP" ] && break; sleep 5
+          done
+          if [ "$s" != "UP" ]; then
+            echo "::error::SonarQube no arrancó en 300 s (estado: ${s:-sin respuesta})"
+            exit 1
+          fi
+          # Contraseña aleatoria solo para este contenedor efímero; nunca se persiste.
+          # SonarQube exige al menos 12 caracteres con mayúscula, minúscula, dígito y símbolo.
+          ADMIN_PASS="Ci-$(openssl rand -hex 12)-Aa1!"
+          echo "::add-mask::$ADMIN_PASS"
+          echo "SONAR_ADMIN_AUTH=admin:$ADMIN_PASS" >> "$GITHUB_ENV"
+          code=$(curl -s -o /dev/null -w '%{http_code}' --user "$SONAR_BOOTSTRAP_AUTH" \
+            -X POST "http://localhost:9000/api/users/change_password" \
+            --data-urlencode "login=admin" --data-urlencode "previousPassword=admin" \
+            --data-urlencode "password=$ADMIN_PASS")
+          if [ "$code" != "204" ]; then
+            echo "::error::change_password respondió HTTP $code"
+            exit 1
+          fi
+          TOKEN=$(curl -s --user "admin:$ADMIN_PASS" -X POST "http://localhost:9000/api/user_tokens/generate" \
+            --data-urlencode "name=ci" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No se pudo generar el token de SonarQube"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      - name: Configurar quality gate "Pasarela"
+        run: |
+          H=http://localhost:9000/api
+          AUTH="$SONAR_ADMIN_AUTH"
+          curl -s --user "$AUTH" -X POST "$H/qualitygates/create?name=Pasarela" >/dev/null
+          for cond in "coverage LT 90" "bugs GT 0" "vulnerabilities GT 0" "security_hotspots_reviewed LT 100" "duplicated_lines_density GT 3" "blocker_violations GT 0" "critical_violations GT 0" "sqale_rating GT 1" "reliability_rating GT 1" "security_rating GT 1"; do
+            read -r metric op err <<< "$cond"
+            curl -s --user "$AUTH" -X POST "$H/qualitygates/create_condition?gateName=Pasarela&metric=$metric&op=$op&error=$err" >/dev/null
+          done
+          curl -s --user "$AUTH" -X POST "$H/qualitygates/set_as_default?name=Pasarela" >/dev/null
+      - uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ steps.token.outputs.token }}
+          SONAR_HOST_URL: http://localhost:9000
+      - name: Detalle del quality gate
+        if: always()
+        env:
+          SONAR_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/qualitygates/project_status?projectKey=pasarela" \
+            | jq -r '.projectStatus as $p | "Estado: \($p.status)", ($p.conditions[] | "  \(.status)  \(.metricKey)=\(.actualValue // "sin medida")  (umbral \(.comparator) \(.errorThreshold))")'
+          curl -s --user "$SONAR_TOKEN:" "http://localhost:9000/api/measures/component?component=pasarela&metricKeys=coverage,lines_to_cover,uncovered_lines,duplicated_lines_density,bugs,vulnerabilities,code_smells,security_hotspots" \
+            | jq -r '.component.measures[] | "  \(.metric)=\(.value)"'
+

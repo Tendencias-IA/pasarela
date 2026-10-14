@@ -1,0 +1,101 @@
+name: Nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"   # 01:00 Bogotá
+
+permissions:
+  contents: read
+
+jobs:
+  audit-api:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]" pip-audit
+      - run: pip-audit --strict
+
+  audit-webapp:
+    name: npm audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
+  load:
+    name: Carga (Locust, RNF-02)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: pasarela_load
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ptest"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      FLASK_APP: app
+      APP_CONFIG: e2e
+      DATABASE_URL: mysql+pymysql://root:test@127.0.0.1:3306/pasarela_load
+      SECRET_KEY: ci-only-not-a-secret
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e "./api[dev,load]"
+      - name: Migrar y levantar la API
+        run: |
+          cd api
+          flask db upgrade
+          gunicorn -b 127.0.0.1:5000 -w 4 "app:create_app()" --daemon --pid /tmp/gunicorn.pid
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:5000/health >/dev/null && exit 0
+            sleep 2
+          done
+          echo "::error::La API no respondió en /health tras 60 s"
+          exit 1
+      - name: Locust, 20 usuarios, 3 minutos
+        run: |
+          cd api
+          locust -f tests/load/locustfile.py --headless -u 20 -r 5 --run-time 3m \
+            --host http://127.0.0.1:5000 --csv /tmp/locust --exit-code-on-error 1
+      - name: Verificar p95 (RNF-02)
+        run: |
+          # Columnas de locust_stats.csv: Type,Name,...,95%,... ; umbrales en ms por endpoint.
+          python3 - <<'EOF'
+          import csv, sys
+          limits = {"GET /api/v1/wallet": 2000, "GET /api/v1/movements": 3000,
+                    "POST /api/v1/transfers": 3000, "POST /api/v1/wallet/recharges": 3000}
+          failed = False
+          with open("/tmp/locust_stats.csv") as f:
+              for row in csv.DictReader(f):
+                  key = f'{row["Type"]} {row["Name"]}'
+                  if key in limits:
+                      p95 = float(row["95%"])
+                      ok = p95 <= limits[key]
+                      print(f'{key}: p95={p95:.0f} ms (límite {limits[key]} ms) {"OK" if ok else "FALLA"}')
+                      failed |= not ok
+          sys.exit(1 if failed else 0)
+          EOF

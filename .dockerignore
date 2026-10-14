@@ -1,0 +1,17 @@
+# El contexto de build es la raíz del repo; solo api/, webapp/ y docker/ entran en las imágenes.
+*
+!api/
+!webapp/
+!docker/
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/tests
+**/e2e
+**/coverage
+**/.env
+**/.env.*

@@ -1,0 +1,4 @@
+# Falsos positivos ya corregidos en commits posteriores; gitleaks escanea toda la historia.
+# Formato: <commit>:<archivo>:<regla>:<línea>
+4e7fdee370f54b5c488dd7389f2d1e9e0c93e45d:.github/workflows/ci.yml:curl-auth-user:197
+b94d2e5d143cdb4d67e5284f83e44b10434ace25:.claude/rules/api-design.md:generic-api-key:79

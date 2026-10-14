@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: Pasarela · Billetera Digital API
+  version: 0.1.0
+  description: Contrato de la API. Fuente de verdad para tipos del cliente y pruebas de contrato.
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Estado del servicio y de la base de datos
+      security: []
+      responses:
+        "200":
+          description: Servicio sano
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: Base de datos no disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, db]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        db:
+          type: string
+          enum: [ok, error]
+    Problem:
+      type: object
+      description: Error en formato RFC 9457
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+        request_id: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }

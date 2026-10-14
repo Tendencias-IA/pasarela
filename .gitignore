@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+coverage.xml
+.coverage
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Entornos y secretos (nunca se versionan)
+.env
+.env.*
+!.env.example
+
+# Sonar
+.scannerwork/
+
+# Editores y SO
+.vscode/
+.idea/
+.DS_Store
+
+# Spec Kit (estado local por máquina)
+.specify/feature.json

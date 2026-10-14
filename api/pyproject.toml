@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools~=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pasarela-api"
+version = "0.1.0"
+description = "API de la billetera digital (prototipo académico)"
+requires-python = ">=3.12"
+dependencies = [
+  "flask~=3.1",
+  "flask-sqlalchemy~=3.1",
+  "flask-migrate~=4.1",
+  "sqlalchemy~=2.0",
+  "pymysql~=1.1",
+  "cryptography~=44.0",
+  "pydantic~=2.11",
+  "python-json-logger~=3.3",
+  "gunicorn~=23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest~=8.4",
+  "pytest-cov~=6.2",
+  "pytest-mock~=3.14",
+  "ruff~=0.12",
+  "mypy~=1.17",
+]
+# Locust registra un plugin de pytest que cuelga la recolección; va en un extra aparte
+# que solo instala el job nocturno de carga.
+load = ["locust~=2.37"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "N", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"migrations/**" = ["E501", "I001"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["flask_migrate.*", "pythonjsonlogger.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--cov=app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=90 -q --ignore=tests/load -p no:locust"
+testpaths = ["app", "tests"]
+
+[tool.coverage.run]
+omit = ["migrations/*", "*/tests/*"]

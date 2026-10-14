@@ -1,0 +1,50 @@
+# Entorno local. `docker compose up -d mysql` para desarrollar con la API fuera de Docker;
+# `docker compose --profile app up --build` para levantar MySQL, API y webapp completos.
+# Variables en .env (copiar desde .env.example). Reglas en .claude/rules/docker.md.
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pasarela}
+      TZ: UTC
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      APP_CONFIG: ${APP_CONFIG:-development}
+      DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-pasarela}
+      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${API_PORT:-5000}:5000"
+
+  webapp:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/webapp.Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:${WEBAPP_PORT:-8080}:8080"
+
+volumes:
+  mysql-data:
