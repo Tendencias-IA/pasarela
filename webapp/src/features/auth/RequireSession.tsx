@@ -1,6 +1,6 @@
 import { IonButton } from "@ionic/react";
-import type { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 import { useSession } from "./useSession";
 
@@ -11,6 +11,17 @@ import { useSession } from "./useSession";
  */
 export function RequireSession({ children }: { children: ReactNode }) {
   const session = useSession();
+  const { pathname } = useLocation();
+  const { refetch } = session;
+  const lastPath = useRef(pathname);
+
+  // La sesión puede vencer o revocarse con la pantalla abierta: cada navegación la revalida,
+  // para que el menú y las pantallas privadas desaparezcan en cuanto el servidor la rechaza.
+  useEffect(() => {
+    if (lastPath.current === pathname) return;
+    lastPath.current = pathname;
+    void refetch();
+  }, [pathname, refetch]);
 
   if (session.isUnauthorized) return <Navigate to="/login" replace />;
   if (session.data !== undefined) return <>{children}</>;

@@ -1,6 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { setSessionExpiredHandler } from "../../../shared/api/client";
@@ -19,6 +19,23 @@ function Harness() {
         element={
           <RequireSession>
             <p>Contenido privado</p>
+          </RequireSession>
+        }
+      />
+    </Routes>
+  );
+}
+
+function NavigatingHarness() {
+  return (
+    <Routes>
+      <Route path="/login" element={<p>Pantalla de login</p>} />
+      <Route
+        path="/*"
+        element={
+          <RequireSession>
+            <p>Contenido privado</p>
+            <Link to="/transferir">Ir a transferir</Link>
           </RequireSession>
         }
       />
@@ -83,5 +100,24 @@ describe("RequireSession (HU-04 CA-2, RNF-01.1)", () => {
       expect(screen.getByText("Contenido privado")).toBeInTheDocument();
     });
     expect(screen.queryByText("Pantalla de login")).not.toBeInTheDocument();
+  });
+
+  it("revalida al cambiar de ruta: con la sesión vencida el menú no sigue visible (HU-04 CA-2)", async () => {
+    let calls = 0;
+    server.use(
+      http.get(SESSION, () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ expires_at: "2026-10-14T21:45:00Z" })
+          : unauthorized();
+      }),
+    );
+    renderWithProviders(<NavigatingHarness />, { route: "/recargar" });
+    expect(await screen.findByText("Contenido privado")).toBeInTheDocument();
+
+    screen.getByText("Ir a transferir").click();
+
+    expect(await screen.findByText("Pantalla de login")).toBeInTheDocument();
+    expect(screen.queryByText("Contenido privado")).not.toBeInTheDocument();
   });
 });
