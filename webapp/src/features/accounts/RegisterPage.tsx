@@ -130,7 +130,7 @@ export function RegisterPage() {
                         rules={{
                           required: "El teléfono es obligatorio.",
                           pattern: {
-                            value: /^3[0-9]{9}$/,
+                            value: /^3\d{9}$/,
                             message: "Ingresa 10 dígitos comenzando por 3.",
                           },
                         }}
@@ -230,7 +230,7 @@ export function RegisterPage() {
                         required: "La contraseña es obligatoria.",
                         minLength: { value: 8, message: "Usa al menos 8 caracteres." },
                         validate: (value) =>
-                          (/\p{L}/u.test(value) && /[0-9]/.test(value)) ||
+                          (/\p{L}/u.test(value) && /\d/.test(value)) ||
                           "Incluye al menos una letra y un número.",
                       }}
                       render={({ field }) => (

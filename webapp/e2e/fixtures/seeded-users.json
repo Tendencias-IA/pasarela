@@ -1,0 +1,4 @@
+{
+  "main": { "phone": "3009876543", "password": "Clave1234" },
+  "withoutHistory": { "phone": "3009876544", "password": "Clave1234" }
+}

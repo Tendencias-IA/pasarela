@@ -11,10 +11,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Protocol
 
-from sqlalchemy.exc import IntegrityError
-
 from app.common.errors import AppError, problem_body
 from app.common.idempotency import IdempotencyContext
+from app.common.idempotency_store import DuplicateIdempotencyKeyError, store_response
 from app.common.masking import mask_name, mask_phone
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.common.money import TRANSFER_MAX, TRANSFER_MIN, to_json
@@ -24,7 +23,6 @@ from app.modules.transfers.repository import TransfersRepository, default_reposi
 from app.modules.wallet import service as wallet_service
 from app.modules.wallet.service import (
     AmountOutOfRangeError,
-    DuplicateIdempotencyKeyError,
     InsufficientBalanceError,
     WalletBalance,
     WalletNotFoundError,
@@ -242,7 +240,7 @@ def confirm_transfer(
                 balance_after=balance_after,
                 created_at=movement.created_at,
             )
-            _store_key(repo, user_id, idempotency, 201, result.to_body())
+            store_response(repo, user_id, idempotency, 201, result.to_body())
     except DuplicateIdempotencyKeyError:
         raise  # la ruta reproduce la respuesta de la petición que ganó la carrera
     except AppError as exc:
@@ -293,7 +291,9 @@ def _record_rejection(  # noqa: PLR0913
                 receiver_wallet_id=receiver_wallet_id,
                 rejection_reason=exc.code,
             )
-        _store_key(repo, user_id, idempotency, exc.status, problem_body(exc, instance, request_id))
+        store_response(
+            repo, user_id, idempotency, exc.status, problem_body(exc, instance, request_id)
+        )
     log.info(
         "transfer.rejected",
         extra={
@@ -303,24 +303,3 @@ def _record_rejection(  # noqa: PLR0913
             "recipient_phone": mask_phone(recipient_phone),
         },
     )
-
-
-def _store_key(
-    repo: TransfersRepository,
-    user_id: int,
-    idempotency: IdempotencyContext,
-    status_code: int,
-    body: dict[str, Any],
-) -> None:
-    try:
-        repo.add_idempotency_key(
-            user_id=user_id,
-            key=idempotency.key,
-            request_hash=idempotency.request_hash,
-            status_code=status_code,
-            body=body,
-        )
-    except IntegrityError as exc:
-        # Otra petición con la misma clave ganó la carrera: se deshace todo y la ruta
-        # reproduce la respuesta ganadora.
-        raise DuplicateIdempotencyKeyError("Otra solicitud idéntica está en curso.") from exc

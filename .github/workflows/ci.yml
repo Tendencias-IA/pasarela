@@ -223,3 +223,8 @@ jobs:
           curl -s -H "Authorization: Bearer $SONAR_TOKEN" "http://localhost:9000/api/measures/component?component=pasarela&metricKeys=coverage,lines_to_cover,uncovered_lines,duplicated_lines_density,bugs,vulnerabilities,code_smells,security_hotspots" \
             | jq -r '.component.measures[] | "  \(.metric)=\(.value)"'
 
+          echo "Incidencias que bloquean el gate (vulnerabilidades y severidad crítica o mayor):"
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" "http://localhost:9000/api/issues/search?componentKeys=pasarela&resolved=false&ps=100&types=VULNERABILITY&severities=BLOCKER,CRITICAL" \
+            | jq -r '.issues[] | "  \(.type) \(.severity) \(.rule) \(.component | sub("^pasarela:"; "")):\(.line // 0) \(.message)"'
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" "http://localhost:9000/api/issues/search?componentKeys=pasarela&resolved=false&ps=100&severities=BLOCKER,CRITICAL" \
+            | jq -r '.issues[] | "  \(.type) \(.severity) \(.rule) \(.component | sub("^pasarela:"; "")):\(.line // 0) \(.message)"'

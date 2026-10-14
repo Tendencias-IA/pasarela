@@ -23,6 +23,7 @@ from sqlalchemy import select
 from app.common.auth import current_user_id
 from app.common.clock import utcnow
 from app.common.errors import IdempotencyKeyMismatchError, MissingIdempotencyKeyError
+from app.common.idempotency_store import DuplicateIdempotencyKeyError
 from app.common.models.idempotency_key import IdempotencyKey
 from app.extensions import db, transaction
 
@@ -79,6 +80,17 @@ def replay_response(stored: StoredResponse) -> Response:
         response.mimetype = "application/problem+json"
     response.headers[REPLAYED_HEADER] = "true"
     return response
+
+
+def replay_lost_race(user_id: int, key: str, error: DuplicateIdempotencyKeyError) -> Response:
+    """Otra petición con la misma clave ganó la carrera: se reproduce su respuesta guardada.
+
+    Si todavía no hay respuesta que reproducir, se propaga el 409 `idempotency_key_in_progress`.
+    """
+    stored = find_existing(user_id, key)
+    if stored is None:
+        raise error
+    return replay_response(stored)
 
 
 def idempotent[**P](view: Callable[P, Any]) -> Callable[P, Any]:

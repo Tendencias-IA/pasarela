@@ -12,6 +12,7 @@ from sqlalchemy import event, select
 
 from app.common.errors import AppError
 from app.common.idempotency import IdempotencyContext
+from app.common.idempotency_store import DuplicateIdempotencyKeyError
 from app.common.models.idempotency_key import IdempotencyKey
 from app.common.models.transaction import Transaction, TransactionStatus
 from app.extensions import db
@@ -209,7 +210,7 @@ def test_same_key_in_parallel_applies_once(app: Flask, funded: list[SeededUser])
             try:
                 service.confirm_transfer(1, funded[1].phone, Decimal("30000.00"), ctx(1))
                 outcomes.append("applied")
-            except wallet_service.DuplicateIdempotencyKeyError:
+            except DuplicateIdempotencyKeyError:
                 outcomes.append("duplicate")
             finally:
                 db.session.remove()
