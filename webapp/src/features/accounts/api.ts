@@ -9,3 +9,15 @@ export function registerAccount(input: RegisterAccountInput) {
     body: input,
   });
 }
+
+export type AccountProfile = components["schemas"]["AccountProfile"];
+export function getProfile() {
+  return request<AccountProfile>("/api/v1/profile");
+}
+export function updatePhone(phone: string) {
+  return request<AccountProfile>("/api/v1/profile", { method: "PATCH", body: { phone } });
+}
+
+export function updateEmail(email: string) {
+  return request<AccountProfile>("/api/v1/profile", { method: "PATCH", body: { email } });
+}

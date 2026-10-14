@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/accounts/RegisterPage";
+import { ProfilePage } from "../features/accounts/ProfilePage";
 import { RechargePage } from "../features/wallet/RechargePage";
 import { AppShell } from "./AppShell";
 import { ComingSoonPage } from "./ComingSoonPage";
@@ -23,7 +24,7 @@ export function AppRoutes() {
             path="/movimientos"
             element={<ComingSoonPage title="Movimientos" story="HU-09" />}
           />
-          <Route path="/perfil" element={<ComingSoonPage title="Perfil" story="HU-10" />} />
+          <Route path="/perfil" element={<ProfilePage />} />
         </Routes>
       </AppShell>
     </IonReactRouter>
