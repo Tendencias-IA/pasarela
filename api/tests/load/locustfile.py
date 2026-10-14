@@ -9,6 +9,8 @@ from uuid import uuid4
 from locust import HttpUser, between, task
 
 PHONE = "3009876543"
+# Receptor sembrado por scripts/seed_test_user.py; no es el usuario del estado vacío (HU-09).
+RECIPIENT_PHONE = "3009876545"
 PASSWORD = "Clave1234"  # noqa: S105 (credencial ficticia del usuario sembrado para pruebas)
 
 
@@ -47,3 +49,13 @@ class WalletUser(HttpUser):
     def wallet(self) -> None:
         """HU-05 CA-6, RNF-02.1: p95 <= 2 s con 20 usuarios."""
         self.client.get("/api/v1/wallet", name="GET /api/v1/wallet")
+
+    @task
+    def transfer(self) -> None:
+        """HU-07 CA-10, RNF-02.3: p95 <= 3 s con 20 usuarios."""
+        self.client.post(
+            "/api/v1/transfers",
+            json={"recipient_phone": RECIPIENT_PHONE, "amount": "100.00"},
+            headers={"X-Requested-With": "fetch", "Idempotency-Key": str(uuid4())},
+            name="POST /api/v1/transfers",
+        )
