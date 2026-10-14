@@ -108,7 +108,8 @@ def test_private_request_extends_expiry_and_renews_cookie(
     expires_at = _parse_iso_z(response.get_json()["expires_at"])
     assert before + IDLE - timedelta(seconds=5) <= expires_at <= after + IDLE + timedelta(seconds=5)
     row = _the_session()
-    assert row.expires_at.replace(microsecond=0) == expires_at
+    # MySQL redondea los microsegundos al guardar (DATETIME sin fracción) y la API los trunca.
+    assert abs(row.expires_at - expires_at) <= timedelta(seconds=1)
     assert row.last_activity_at >= before - timedelta(seconds=1)
     set_cookie = "; ".join(response.headers.getlist("Set-Cookie"))
     assert "session=" in set_cookie
