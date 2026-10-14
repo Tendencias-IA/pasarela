@@ -28,6 +28,9 @@ export function useRecharge() {
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [state, setState] = useState<RechargeState>({ kind: "idle" });
   const keyRef = useRef<string>(crypto.randomUUID());
+  // Guarda síncrona: `state` es una captura del render y dos llamadas en el mismo tick
+  // (Enter + clic) pasarían ambas antes de que React vuelva a renderizar.
+  const inFlightRef = useRef(false);
 
   const setAmount = useCallback((value: string) => {
     setAmountRaw(value);
@@ -36,7 +39,7 @@ export function useRecharge() {
   }, []);
 
   const submit = useCallback(async () => {
-    if (state.kind === "submitting") return;
+    if (inFlightRef.current) return;
     const canonical = parseAmountInput(amount);
     if (canonical === null) {
       setFieldError(FORMAT_MESSAGE);
@@ -47,6 +50,7 @@ export function useRecharge() {
       return;
     }
     setFieldError(null);
+    inFlightRef.current = true;
     setState({ kind: "submitting" });
     try {
       const result = await postRecharge(canonical, keyRef.current);
@@ -59,8 +63,10 @@ export function useRecharge() {
       } else {
         setState({ kind: "rejected", message: "No se pudo conectar con el servicio." });
       }
+    } finally {
+      inFlightRef.current = false;
     }
-  }, [amount, state.kind]);
+  }, [amount]);
 
   const reset = useCallback(() => {
     setAmountRaw("");

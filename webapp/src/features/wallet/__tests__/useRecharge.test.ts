@@ -148,6 +148,27 @@ describe("useRecharge (HU-08)", () => {
     expect(result.current.state.kind).toBe("success");
   });
 
+  it("dos llamadas en el mismo tick (Enter + clic) envían una sola petición", async () => {
+    let requests = 0;
+    server.use(
+      http.post(URL, async () => {
+        requests += 1;
+        await delay(50);
+        return okResponse("50000.00", "50000.00");
+      }),
+    );
+    const { result } = renderHook(() => useRecharge());
+
+    act(() => {
+      result.current.setAmount("50000");
+    });
+    // Sin re-render entre ambas: la guarda no puede depender del estado capturado.
+    await act(() => Promise.all([result.current.submit(), result.current.submit()]));
+
+    expect(requests).toBe(1);
+    expect(result.current.state.kind).toBe("success");
+  });
+
   it("genera una clave distinta cuando cambia el monto", async () => {
     const keys: string[] = [];
     server.use(

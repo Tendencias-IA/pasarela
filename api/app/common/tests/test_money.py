@@ -32,7 +32,21 @@ def test_parse_amount_accepts_valid_strings(raw: str, expected: str) -> None:
 
 @pytest.mark.parametrize(
     "raw",
-    ["", "abc", "-1", "+5", "1.234", "NaN", "Infinity", "1e3", "0", "0.00", "1234567890123456"],
+    [
+        "",
+        "abc",
+        "-1",
+        "+5",
+        "1.234",
+        "NaN",
+        "Infinity",
+        "1e3",
+        "0",
+        "0.00",
+        "1234567890123456",
+        "\u0665\u0660\u0660\u0660",  # dígitos árabes: isdigit() los acepta, el contrato no
+        "\uff15\uff10\uff10\uff10",  # dígitos de ancho completo
+    ],
 )
 def test_parse_amount_rejects_invalid_strings(raw: str) -> None:
     with pytest.raises(ValueError, match="hasta dos decimales"):

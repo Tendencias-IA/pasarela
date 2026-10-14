@@ -27,7 +27,9 @@ def parse_amount(value: object) -> Decimal:
     if not isinstance(value, str):
         raise ValueError(AMOUNT_FORMAT_MESSAGE)
     text = value.strip()
-    if not text or any(ch in text for ch in "+-eE") or not text.replace(".", "", 1).isdigit():
+    digits = text.replace(".", "", 1)
+    # `isdigit()` acepta dígitos Unicode (árabes, de ancho completo…); el contrato exige ASCII.
+    if not text or any(ch in text for ch in "+-eE") or not (digits.isascii() and digits.isdigit()):
         raise ValueError(AMOUNT_FORMAT_MESSAGE)
     try:
         amount = Decimal(text)

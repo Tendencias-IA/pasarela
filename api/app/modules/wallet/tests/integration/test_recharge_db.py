@@ -135,3 +135,39 @@ def test_business_rejection_keeps_balance_and_records_rejected_row(
 
     assert _balance(1) == Decimal("0.00")
     assert _count_transactions() == 1
+
+
+def test_expired_key_is_forgotten_and_deleted(app: Flask, seeded_users: list[SeededUser]) -> None:
+    """ADR-0005: una clave de más de 24 h es una solicitud nueva (limpieza perezosa)."""
+    from datetime import timedelta
+
+    from app.common import idempotency
+    from app.common.clock import utcnow
+    from app.common.models.idempotency_key import IdempotencyKey
+
+    service.create_wallet(1)
+    service.recharge(1, Decimal("10000.00"), CTX_A)
+    row = db.session.get(IdempotencyKey, (1, CTX_A.key))
+    assert row is not None
+    row.created_at = utcnow() - idempotency.IDEMPOTENCY_TTL - timedelta(seconds=1)
+    db.session.commit()
+
+    assert idempotency.find_existing(1, CTX_A.key) is None
+    db.session.expire_all()
+    assert db.session.get(IdempotencyKey, (1, CTX_A.key)) is None
+
+    # La misma clave vuelve a acreditar: es una solicitud nueva.
+    service.recharge(1, Decimal("10000.00"), CTX_A)
+    assert _balance(1) == Decimal("20000.00")
+    assert idempotency.find_existing(1, CTX_A.key) is not None
+
+
+def test_fresh_key_is_kept(app: Flask, seeded_users: list[SeededUser]) -> None:
+    from app.common import idempotency
+
+    service.create_wallet(1)
+    service.recharge(1, Decimal("10000.00"), CTX_A)
+
+    stored = idempotency.find_existing(1, CTX_A.key)
+    assert stored is not None
+    assert stored.status_code == 201

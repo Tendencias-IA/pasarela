@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 from sqlalchemy import select
 
+from app.common.clock import utcnow
 from app.common.models.idempotency_key import IdempotencyKey
 from app.common.models.transaction import Transaction, TransactionStatus, TransactionType
 from app.extensions import db
@@ -25,7 +26,7 @@ class TransactionLike(Protocol):
     def id(self) -> int: ...
 
     @property
-    def created_at(self) -> datetime | None: ...
+    def created_at(self) -> datetime: ...
 
 
 class WalletRepository(Protocol):
@@ -89,6 +90,7 @@ class SqlWalletRepository:
             receiver_wallet_id=receiver_wallet_id,
             sender_wallet_id=sender_wallet_id,
             rejection_reason=rejection_reason,
+            created_at=utcnow(),
         )
         db.session.add(transaction)
         db.session.flush()
@@ -104,6 +106,7 @@ class SqlWalletRepository:
                 request_hash=request_hash,
                 status_code=status_code,
                 response_body=body,
+                created_at=utcnow(),
             )
         )
         db.session.flush()

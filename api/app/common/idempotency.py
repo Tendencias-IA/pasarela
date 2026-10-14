@@ -13,6 +13,7 @@ import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import wraps
 from typing import Any
 
@@ -20,13 +21,17 @@ from flask import Response, g, jsonify, request
 from sqlalchemy import select
 
 from app.common.auth import current_user_id
+from app.common.clock import utcnow
 from app.common.errors import IdempotencyKeyMismatchError, MissingIdempotencyKeyError
 from app.common.models.idempotency_key import IdempotencyKey
-from app.extensions import db
+from app.extensions import db, transaction
 
 log = logging.getLogger("app.idempotency")
 
 REPLAYED_HEADER = "Idempotent-Replayed"
+# ADR-0005: una clave caduca a las 24 h; pasado ese plazo la misma clave es una
+# solicitud nueva y la fila vencida se borra al consultarla (limpieza perezosa).
+IDEMPOTENCY_TTL = timedelta(hours=24)
 
 
 @dataclass(frozen=True)
@@ -52,15 +57,22 @@ def request_hash(method: str, path: str, body: bytes) -> str:
 
 
 def find_existing(user_id: int, key: str) -> StoredResponse | None:
+    """Respuesta guardada para `(user_id, key)`, o None si no existe o ya caducó."""
     row = db.session.execute(
         select(IdempotencyKey).where(IdempotencyKey.user_id == user_id, IdempotencyKey.key == key)
     ).scalar_one_or_none()
     if row is None:
         return None
+    if row.created_at + IDEMPOTENCY_TTL <= utcnow():
+        with transaction():
+            db.session.delete(row)
+        log.info("idempotency.expired", extra={"user_id": user_id})
+        return None
     return StoredResponse(row.request_hash, row.status_code, row.response_body)
 
 
-def _replay(stored: StoredResponse) -> Response:
+def replay_response(stored: StoredResponse) -> Response:
+    """Respuesta HTTP de un replay: mismo estado y cuerpo, `Idempotent-Replayed: true`."""
     response = jsonify(stored.body)
     response.status_code = stored.status_code
     if stored.status_code >= 400:
@@ -92,7 +104,7 @@ def idempotent[**P](view: Callable[P, Any]) -> Callable[P, Any]:
             log.info(
                 "idempotency.replayed", extra={"user_id": user_id, "status": stored.status_code}
             )
-            return _replay(stored)
+            return replay_response(stored)
         g.idempotency = IdempotencyContext(key=key, request_hash=digest)
         return view(*args, **kwargs)
 
