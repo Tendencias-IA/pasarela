@@ -178,13 +178,24 @@ jobs:
             exit 1
           fi
           # Contraseña aleatoria solo para este contenedor efímero; nunca se persiste.
-          ADMIN_PASS=$(openssl rand -hex 16)
+          # SonarQube exige al menos 12 caracteres con mayúscula, minúscula, dígito y símbolo.
+          ADMIN_PASS="Ci-$(openssl rand -hex 12)-Aa1!"
           echo "::add-mask::$ADMIN_PASS"
           echo "SONAR_ADMIN_AUTH=admin:$ADMIN_PASS" >> "$GITHUB_ENV"
-          curl -s --user "$SONAR_BOOTSTRAP_AUTH" -X POST "http://localhost:9000/api/users/change_password" \
+          code=$(curl -s -o /dev/null -w '%{http_code}' --user "$SONAR_BOOTSTRAP_AUTH" \
+            -X POST "http://localhost:9000/api/users/change_password" \
             --data-urlencode "login=admin" --data-urlencode "previousPassword=admin" \
-            --data-urlencode "password=$ADMIN_PASS" >/dev/null || true
-          TOKEN=$(curl -s --user "admin:$ADMIN_PASS" -X POST "http://localhost:9000/api/user_tokens/generate?name=ci" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+            --data-urlencode "password=$ADMIN_PASS")
+          if [ "$code" != "204" ]; then
+            echo "::error::change_password respondió HTTP $code"
+            exit 1
+          fi
+          TOKEN=$(curl -s --user "admin:$ADMIN_PASS" -X POST "http://localhost:9000/api/user_tokens/generate" \
+            --data-urlencode "name=ci" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No se pudo generar el token de SonarQube"
+            exit 1
+          fi
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: Configurar quality gate "Pasarela"
