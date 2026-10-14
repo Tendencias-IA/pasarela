@@ -11,6 +11,7 @@ import {
 } from "../../shared/money";
 import { MOVEMENTS_QUERY_KEY } from "../movements/useMovements";
 import { postRecharge, type RechargeOut } from "./api";
+import { WALLET_QUERY_KEY } from "./useWallet";
 
 export const RANGE_MESSAGE = `El monto debe estar entre ${formatCOP(RECHARGE_MIN)} y ${formatCOP(RECHARGE_MAX)} COP.`;
 export const FORMAT_MESSAGE = "Ingresa un monto en pesos colombianos (hasta dos decimales).";
@@ -60,6 +61,7 @@ export function useRecharge() {
       setState({ kind: "success", result });
       // webapp.md: el historial (HU-09) debe reflejar la recarga en su siguiente consulta.
       void queryClient.invalidateQueries({ queryKey: MOVEMENTS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY }); // HU-05 CA-3
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         const byField = error.messagesByField();

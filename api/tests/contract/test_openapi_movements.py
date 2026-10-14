@@ -61,3 +61,16 @@ def test_empty_history_matches_schema(
 
 def test_path_is_declared_in_openapi(spec: dict[str, Any]) -> None:
     assert "get" in spec["paths"]["/api/v1/movements"]
+
+
+def test_wallet_balance_200_matches_wallet_out_schema(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser], spec: dict[str, Any]
+) -> None:
+    """HU-05 CA-2: el saldo viaja como cadena decimal con dos decimales."""
+    wallet_service.create_wallet(1)
+
+    response = logged_in_client.get("/api/v1/wallet")
+
+    assert response.status_code == 200
+    _validate(spec, "WalletOut", response.get_json())
+    assert "get" in spec["paths"]["/api/v1/wallet"]

@@ -42,3 +42,8 @@ class WalletUser(HttpUser):
     def movements(self) -> None:
         """HU-09 CA-8, RNF-02.2: p95 <= 3 s con 20 usuarios."""
         self.client.get("/api/v1/movements?page=1", name="GET /api/v1/movements")
+
+    @task(2)
+    def wallet(self) -> None:
+        """HU-05 CA-6, RNF-02.1: p95 <= 2 s con 20 usuarios."""
+        self.client.get("/api/v1/wallet", name="GET /api/v1/wallet")
