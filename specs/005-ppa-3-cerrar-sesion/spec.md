@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feat/PPA-3-cerrar-sesion`
 **Created**: 2026-10-14
-**Status**: Ready for implementation
+**Status**: Implemented, pending review
 **Input**: PPA-3 / HU-03, requisitos-billetera-v1.0.md, CA-1 a CA-4.
 
 ## User Scenarios & Testing
