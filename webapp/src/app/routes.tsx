@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "../features/auth/LoginPage";
 import { MovementsPage } from "../features/movements/MovementsPage";
+import { TransferPage } from "../features/transfers/TransferPage";
 import { RechargePage } from "../features/wallet/RechargePage";
 import { AppShell } from "./AppShell";
 import { ComingSoonPage } from "./ComingSoonPage";
@@ -17,7 +18,7 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/recargar" element={<RechargePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/transferir" element={<ComingSoonPage title="Transferir" story="HU-06" />} />
+          <Route path="/transferir" element={<TransferPage />} />
           <Route path="/movimientos" element={<MovementsPage />} />
           <Route path="/perfil" element={<ComingSoonPage title="Perfil" story="HU-10" />} />
         </Routes>
