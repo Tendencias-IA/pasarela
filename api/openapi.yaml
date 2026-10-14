@@ -250,7 +250,7 @@ paths:
                 $ref: "#/components/schemas/Problem"
     patch:
       operationId: updatePhone
-      summary: Actualizar el teléfono propio (HU-12)
+      summary: Actualizar teléfono o correo propio (HU-12, HU-13)
       parameters:
         - name: X-Requested-With
           in: header
@@ -263,7 +263,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdatePhoneRequest"
+              oneOf:
+                - $ref: "#/components/schemas/UpdatePhoneRequest"
+                - $ref: "#/components/schemas/UpdateEmailRequest"
       responses:
         "200":
           description: Perfil actualizado
@@ -284,7 +286,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         "409":
-          description: Teléfono ya registrado
+          description: Teléfono o correo ya registrado
           content:
             application/problem+json:
               schema:
@@ -310,6 +312,15 @@ components:
         phone:
           type: string
           pattern: "^3[0-9]{9}$"
+    UpdateEmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
     AccountProfile:
       type: object
       additionalProperties: false
