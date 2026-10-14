@@ -12,6 +12,8 @@ export interface RequestOptions {
   body?: unknown;
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /** Con `false` el 401 solo se propaga (lo usa el guardián de rutas, que redirige por su cuenta). */
+  redirectOnUnauthorized?: boolean;
 }
 
 export type SessionExpiredHandler = () => void;
@@ -42,7 +44,13 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   if (!response.ok) {
     const error = await toApiError(response);
-    if (error.status === 401 && error.code === "invalid_session") onSessionExpired();
+    if (
+      error.status === 401 &&
+      error.code === "invalid_session" &&
+      options.redirectOnUnauthorized !== false
+    ) {
+      onSessionExpired();
+    }
     throw error;
   }
   if (response.status === 204) return undefined as T;

@@ -50,22 +50,27 @@ test.describe("HU-09 Historial de movimientos", () => {
     await expect(page).toHaveURL(/\/login(\?.*)?$/);
   });
 
-  test("CA-1, CA-2, CA-4, SC-007: una recarga aparece de primera en el historial", async ({
+  test("CA-1, CA-2, SC-007: una recarga recién hecha aparece en el historial con su monto y estado", async ({
     page,
   }) => {
     const login = new LoginPage(page);
     await login.goto();
     await login.signIn(USER_WITH_HISTORY.phone, USER_WITH_HISTORY.password);
 
-    await rechargeOnce(page);
+    // Monto único: otras specs recargan al mismo usuario en paralelo, y el orden exacto
+    // (CA-4) ya lo verifican las pruebas de integración y de API.
+    const recharge = new RechargePage(page);
+    await recharge.goto();
+    await recharge.fillAmount("23456");
+    await recharge.submit();
+    await expect(recharge.result()).toContainText("Recarga exitosa de $ 23.456,00.");
 
     const movements = new MovementsPage(page);
     await movements.goto();
-    const first = movements.rows().first();
-    await expect(first).toContainText("Recarga");
-    await expect(first).toContainText("$ 20.000,00");
-    await expect(first).toContainText("Exitosa");
-    await expect(first).toHaveAttribute("data-status", "exitosa");
+    const row = movements.rows().filter({ hasText: "$ 23.456,00" }).first();
+    await expect(row).toContainText("Recarga");
+    await expect(row).toContainText("Exitosa");
+    await expect(row).toHaveAttribute("data-status", "exitosa");
   });
 
   test("SC-002: ningún texto del historial contiene un teléfono de 10 dígitos", async ({

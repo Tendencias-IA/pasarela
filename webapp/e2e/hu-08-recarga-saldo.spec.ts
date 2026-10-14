@@ -17,6 +17,7 @@ test.describe("HU-08 Recargar saldo", () => {
   });
 
   test("la pantalla no tiene violaciones serias de accesibilidad (SC-006)", async ({ page }) => {
+    await new LoginPage(page).signInAsSeededUser();
     const recharge = new RechargePage(page);
     await recharge.goto();
     await expect(recharge.amountField()).toBeVisible();
@@ -30,6 +31,7 @@ test.describe("HU-08 Recargar saldo", () => {
   });
 
   test("CA-2: 4999 y abc se rechazan en el formulario sin llamar a la API", async ({ page }) => {
+    await new LoginPage(page).signInAsSeededUser();
     const recharge = new RechargePage(page);
     let requests = 0;
     await page.route("**/api/v1/wallet/recharges", async (route) => {
@@ -50,6 +52,7 @@ test.describe("HU-08 Recargar saldo", () => {
   });
 
   test("CA-9: el botón se deshabilita durante el envío", async ({ page }) => {
+    await new LoginPage(page).signInAsSeededUser();
     const recharge = new RechargePage(page);
     await page.route("**/api/v1/wallet/recharges", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -75,6 +78,7 @@ test.describe("HU-08 Recargar saldo", () => {
   });
 
   test("HU-04 CA-2: ante 401 invalid_session la webapp redirige a /login", async ({ page }) => {
+    await new LoginPage(page).signInAsSeededUser();
     const recharge = new RechargePage(page);
     await page.route("**/api/v1/wallet/recharges", (route) =>
       route.fulfill({

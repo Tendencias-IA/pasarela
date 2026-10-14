@@ -2,26 +2,38 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "../features/auth/LoginPage";
+import { RequireSession } from "../features/auth/RequireSession";
 import { MovementsPage } from "../features/movements/MovementsPage";
 import { RechargePage } from "../features/wallet/RechargePage";
 import { AppShell } from "./AppShell";
 import { ComingSoonPage } from "./ComingSoonPage";
 import { HomePage } from "./HomePage";
 
-/** Rutas de la webapp (ADR-0007: Ionic + react-router-dom 6). */
-export function AppRoutes() {
+/** Área privada: guardián de sesión + menú. Todo lo que no es /login pasa por aquí. */
+function PrivateArea() {
   return (
-    <IonReactRouter>
+    <RequireSession>
       <AppShell>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/recargar" element={<RechargePage />} />
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/transferir" element={<ComingSoonPage title="Transferir" story="HU-06" />} />
           <Route path="/movimientos" element={<MovementsPage />} />
           <Route path="/perfil" element={<ComingSoonPage title="Perfil" story="HU-10" />} />
         </Routes>
       </AppShell>
+    </RequireSession>
+  );
+}
+
+/** Rutas de la webapp (ADR-0007: Ionic + react-router-dom 6). /login es pública y sin menú. */
+export function AppRoutes() {
+  return (
+    <IonReactRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/*" element={<PrivateArea />} />
+      </Routes>
     </IonReactRouter>
   );
 }

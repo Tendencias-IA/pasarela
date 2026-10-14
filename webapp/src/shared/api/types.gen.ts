@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vencimiento de la sesión; la consulta cuenta como actividad (HU-04) */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -156,6 +173,10 @@ export interface components {
             /** @enum {integer} */
             page_size: 20;
             total: number;
+        };
+        SessionOut: {
+            /** Format: date-time */
+            expires_at: string;
         };
         LoginIn: {
             phone: string;
@@ -374,6 +395,35 @@ export interface operations {
                         /** @enum {string} */
                         db: "error";
                     };
+                };
+            };
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión vigente; la cookie se renueva con el nuevo vencimiento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Sin sesión, vencida o revocada (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

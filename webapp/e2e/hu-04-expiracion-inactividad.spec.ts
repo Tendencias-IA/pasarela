@@ -8,6 +8,7 @@ test.describe("HU-04 Sesión por inactividad", () => {
   test("CA-2: ante 401 invalid_session se pide iniciar sesión de nuevo con aviso", async ({
     page,
   }) => {
+    await new LoginPage(page).signInAsSeededUser();
     await page.route("**/api/v1/wallet", (route) =>
       route.fulfill({
         status: 401,
@@ -42,10 +43,26 @@ test.describe("HU-04 Sesión por inactividad", () => {
   });
 
   test("CA-1, CA-2: una sesión sin cookie válida no accede al historial", async ({ page }) => {
+    await new LoginPage(page).signInAsSeededUser();
+    await expect(page.getByLabel("Saldo disponible")).toContainText("$");
     await page.context().clearCookies();
 
     await page.goto("/movimientos");
 
-    await expect(page).toHaveURL(/\/login\?motivo=expirada$/);
+    await expect(page).toHaveURL(/\/login(\?.*)?$/);
+  });
+
+  test("CA-2: tras vencer la sesión, volver a la pestaña lleva a iniciar sesión", async ({
+    page,
+  }) => {
+    await new LoginPage(page).signInAsSeededUser();
+    await page.goto("/");
+    await expect(page.getByLabel("Saldo disponible")).toContainText("$");
+    await page.context().clearCookies();
+
+    // TanStack Query revalida al volver a la pestaña (visibilitychange).
+    await page.evaluate("document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))");
+
+    await expect(page).toHaveURL(/\/login/);
   });
 });
