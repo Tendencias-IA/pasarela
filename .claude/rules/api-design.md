@@ -25,7 +25,7 @@ desde ese archivo con `openapi-typescript`; nunca escribe tipos de respuesta a m
   como defensa CSRF complementaria a `SameSite=Lax` (ADR-0004).
 - `POST /transfers` y `POST /wallet/recharges` exigen `Idempotency-Key` (ADR-0005).
 - Autenticación por cookie de sesión `HttpOnly`. Sin sesión válida: `401` con
-  `type: ".../unauthenticated"`. Nunca `403` para distinguir "no existe" de "no es tuyo"
+  `code: invalid_session`. Nunca `403` para distinguir "no existe" de "no es tuyo"
   en recursos de otro usuario: se responde `404` para no filtrar existencia (RNF-06.1).
 
 ## Endpoints de la v1

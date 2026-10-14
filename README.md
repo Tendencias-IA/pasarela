@@ -21,7 +21,7 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | `docs/referencia/` | Especificación de requisitos e historias de usuario (fuente de verdad del negocio). |
 | `specs/` | Una carpeta por historia implementada: `spec.md`, `plan.md`, `tasks.md`. |
 | `api/` | API en Python + Flask: app factory, configuraciones, errores RFC 9457, logging JSON, `/health`, migraciones y pruebas. |
-| `webapp/` | Webapp en React + Vite + TypeScript: cliente HTTP, pantalla inicial, Vitest, Playwright. |
+| `webapp/` | Webapp en React + Vite + TypeScript con Ionic: panel inicial, `/recargar` (HU-08), cliente HTTP, Vitest, Playwright. |
 | `.github/` | Plantilla de PR, CODEOWNERS y pipeline de CI. |
 | `docker-compose.yml`, `docker/` | MySQL local e imágenes de `api` y `webapp` (ver `.claude/rules/docker.md`). |
 

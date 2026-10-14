@@ -42,7 +42,14 @@ Criterios de aceptación:
 Dependencias: HU-02 y HU-05. Fuera de alcance: ejecutar la transferencia (HU-07).
 ```
 
-Resultado: `specs/006-ppa-6-preparar-transferencia/spec.md`. Revísalo y exige que:
+Resultado: `specs/NNN-ppa-6-preparar-transferencia/spec.md`, donde `NNN` es el siguiente
+número libre en tu rama. Ese número se vuelve definitivo al llegar a `main`, no al crear la
+rama: si otra historia se fusionó antes con el mismo número, renombra tu carpeta al
+siguiente libre y actualiza `.specify/feature.json` y las referencias (`grep -rl` del
+nombre viejo) antes de abrir el PR. Lo mismo aplica a las migraciones de Alembic: una
+sola cadena de revisiones, con `down_revision` apuntando a la última de `main`.
+
+Revisa el `spec.md` y exige que:
 
 - cada criterio de aceptación aparezca como escenario Given/When/Then con su código
   `CA-n`;
@@ -127,7 +134,7 @@ git log --oneline main..HEAD
 ## Ejemplo resumido completo (HU-06)
 
 1. `git checkout -b feat/PPA-6-preparar-transferencia`
-2. `/speckit-specify` con la HU-06 → `specs/006-ppa-6-preparar-transferencia/spec.md`
+2. `/speckit-specify` con la HU-06 → `specs/NNN-ppa-6-preparar-transferencia/spec.md`
 3. `/speckit-plan` → módulo `transfers`, endpoint `POST /api/v1/transfers/preview`, sin
    escritura en BD, enmascaramiento en servidor.
 4. `/speckit-tasks` → tests unitarios de `preview_transfer` (CA-2..CA-6), test de

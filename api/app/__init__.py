@@ -8,9 +8,9 @@ from flask import Flask
 
 from app.common import errors, health, security
 from app.common import logging as app_logging
+from app.common import models as _shared_models  # noqa: F401  (Alembic debe ver los modelos)
 from app.config import get_config
 from app.extensions import db, limiter, migrate
-from app.modules.auth.routes import bp as auth_bp
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -27,7 +27,10 @@ def create_app(config_name: str | None = None) -> Flask:
     security.init_app(app)
 
     app.register_blueprint(health.bp)
+    # Módulos de negocio, con prefijo /api/v1/<recurso>.
+    from app.modules.auth.routes import bp as auth_bp
+    from app.modules.wallet import routes as wallet_routes
+
     app.register_blueprint(auth_bp)
-    # Los módulos de negocio (wallet, transfers, movements) se registran aquí a medida
-    # que se implementan sus historias, con prefijo /api/v1.
+    app.register_blueprint(wallet_routes.bp, url_prefix="/api/v1/wallet")
     return app

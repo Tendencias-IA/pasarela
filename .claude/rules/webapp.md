@@ -136,6 +136,14 @@ propiedad `label` (no con `<label for>`), porque el `input` real vive en el shad
 - Playwright corre `@axe-core/playwright` en cada página principal; cualquier violación
   `serious` o `critical` falla el test.
 
+## Pruebas unitarias con Ionic
+
+Los componentes de Ionic son web components y **no se hidratan en jsdom**: `IonInput` no
+crea el `<input>` interno, así que Testing Library no puede escribir en él. Por eso la
+lógica de cada pantalla vive en un hook (`useRecharge`) que se prueba con `renderHook` y
+MSW (validación, claves, errores, 401), y el componente de página solo se prueba por
+render (títulos, textos, estados). La interacción real se cubre en Playwright.
+
 ## Pruebas E2E (Playwright)
 
 - Un archivo por historia en `e2e/hu-NN-<slug>.spec.ts`, con al menos el camino exitoso

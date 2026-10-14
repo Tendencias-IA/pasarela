@@ -14,7 +14,7 @@ import { useLogin } from "./useLogin";
 
 const PHONE_PATTERN = /^3[0-9]{9}$/;
 
-/** HU-02: iniciar sesión con teléfono y contraseña. Diseño: artifact Moneo, Main.dc.html. */
+/** HU-02: iniciar sesión con teléfono y contraseña. Diseño del equipo (pantalla Iniciar sesión). */
 export function LoginPage() {
   const { state, submit } = useLogin();
   const [phone, setPhone] = useState("");
@@ -41,14 +41,14 @@ export function LoginPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar color="dark">
-          <IonTitle>Moneo</IonTitle>
+          <IonTitle>TAI</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
         <div className="auth-layout">
           <section className="auth-brand">
             <div>
-              <h1>Moneo</h1>
+              <h1>TAI</h1>
               <p>
                 Tu dinero, bajo control. Transfiere, recarga y revisa tu saldo en un solo lugar.
               </p>

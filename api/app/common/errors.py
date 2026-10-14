@@ -33,6 +33,34 @@ class ValidationError(AppError):
     title = "Datos inválidos"
 
 
+class MissingIdempotencyKeyError(AppError):
+    status = 400
+    code = "missing_idempotency_key"
+    title = "Cabecera Idempotency-Key requerida"
+
+
+class IdempotencyKeyMismatchError(AppError):
+    status = 422
+    code = "idempotency_key_mismatch"
+    title = "Idempotency-Key reutilizada con otra solicitud"
+
+
+def problem_body(exc: AppError, instance: str, request_id: str | None) -> dict[str, Any]:
+    """Cuerpo RFC 9457 de un error de negocio; lo usan el handler y la persistencia idempotente."""
+    body: dict[str, Any] = {
+        "type": PROBLEM_BASE + exc.code,
+        "title": exc.title,
+        "status": exc.status,
+        "detail": exc.detail,
+        "instance": instance,
+        "code": exc.code,
+        "request_id": request_id,
+    }
+    if exc.errors:
+        body["errors"] = exc.errors
+    return body
+
+
 def problem(
     status: int, code: str, title: str, detail: str = "", errors: list[dict[str, str]] | None = None
 ) -> Response:
@@ -57,7 +85,10 @@ def init_app(app: Flask) -> None:
     @app.errorhandler(AppError)
     def handle_app_error(exc: AppError) -> Response:
         log.info("business.rejected", extra={"code": exc.code, "status": exc.status})
-        return problem(exc.status, exc.code, exc.title, exc.detail, exc.errors)
+        response = jsonify(problem_body(exc, request.path, getattr(g, "request_id", None)))
+        response.status_code = exc.status
+        response.mimetype = "application/problem+json"
+        return response
 
     @app.errorhandler(PydanticValidationError)
     def handle_pydantic_error(exc: PydanticValidationError) -> Response:

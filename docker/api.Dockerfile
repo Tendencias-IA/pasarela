@@ -17,6 +17,7 @@ WORKDIR /srv/app
 COPY --from=build /install /usr/local
 COPY --chown=app:app api/app ./app
 COPY --chown=app:app api/migrations ./migrations
+COPY --chown=app:app api/scripts ./scripts
 USER 10001:10001
 EXPOSE 5000
 # Sin curl en la imagen: el healthcheck usa la biblioteca estándar de Python.
