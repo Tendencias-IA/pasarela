@@ -2,8 +2,7 @@
 
 Todo lo listado aquí es bloqueante: si falla, el PR no se fusiona. Las reglas en prosa de
 `.claude/rules/` son guía; estos gates son la verificación. Definidos en
-`.github/workflows/checks.yml` (título y secretos, en todo PR), `.github/workflows/ci.yml`
-(jobs de código, solo cuando cambian `api/` o `webapp/`) y
+`.github/workflows/ci.yml` (corre cuando cambian `api/` o `webapp/`) y
 `sonar-project.properties`.
 
 ## Gates del PR (CI)
@@ -20,8 +19,6 @@ Todo lo listado aquí es bloqueante: si falla, el PR no se fusiona. Las reglas e
 | Build de la webapp | `npm run build` | sin errores ni warnings de tamaño |
 | E2E | `npm run e2e` | 100 % verdes en los dos proyectos |
 | SonarQube | `sonar-scanner` + espera del quality gate | gate `Pasarela` en verde |
-| Secretos | `gitleaks git .` (CLI en contenedor) | 0 hallazgos; falsos positivos históricos en `.gitleaksignore` |
-| Título del PR | `type(PPA-n): descripción` | regex en CI |
 
 ## Quality gate de SonarQube ("Pasarela")
 

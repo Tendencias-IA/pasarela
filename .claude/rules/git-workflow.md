@@ -50,7 +50,7 @@ ella sale producción. Ambientes: local y producción.
 
 ## Pull request
 
-- Título igual que un commit: `type(PPA-n): descripción`. El CI lo valida.
+- Título igual que un commit: `type(PPA-n): descripción`; lo revisa quien aprueba.
 - Se usa la plantilla de `.github/PULL_REQUEST_TEMPLATE.md`: resumen (qué y por qué),
   ticket de Jira y carpeta `specs/<NNN-ppa-n-slug>/`, lista de cambios y cómo probar.
   Corto y concreto; una alternativa descartada se menciona solo si el revisor la

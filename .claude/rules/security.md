@@ -55,7 +55,7 @@ que el equipo adoptó. Decisiones de sesión en ADR-0004.
 
 - Secretos solo en variables de entorno (`SECRET_KEY`, `DATABASE_URL`). En el repo
   únicamente `api/.env.example` con valores de ejemplo inválidos. `.env` está en
-  `.gitignore`; `gitleaks` corre en CI.
+  `.gitignore`; antes de cada push se corre `gitleaks git .` en local.
 - Si un secreto llega a un commit: rotarlo primero, limpiar la historia después, avisar
   al equipo. Borrar el commit no lo des-filtra.
 - `DEBUG=False` y `TESTING=False` en producción; el manejador `500` nunca devuelve stack
