@@ -1,5 +1,9 @@
 """SQLAlchemy operations for the accounts module only."""
 
+from __future__ import annotations
+
+from collections.abc import Iterable
+
 from sqlalchemy import or_, select
 
 from app.extensions import db
@@ -25,6 +29,13 @@ def find_duplicate(data: RegisterAccountIn) -> bool:
 def get_by_phone(phone: str) -> User | None:
     """Public accounts lookup used by authentication without crossing module layers."""
     return db.session.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+
+
+def get_by_ids(user_ids: Iterable[int]) -> list[User]:
+    ids = list(user_ids)
+    if not ids:
+        return []
+    return list(db.session.execute(select(User).where(User.id.in_(ids))).scalars())
 
 
 def create(data: RegisterAccountIn, password_hash: str) -> User:

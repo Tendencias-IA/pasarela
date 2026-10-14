@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -14,6 +15,7 @@ from app.common.errors import AppError, problem_body
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.common.money import RECHARGE_MAX, RECHARGE_MIN, to_json
 from app.extensions import transaction
+from app.modules.accounts import service as accounts_service
 from app.modules.wallet import repository as wallet_repository
 from app.modules.wallet.models import Wallet
 from app.modules.wallet.repository import SessionLike, WalletRepository, default_repository
@@ -36,23 +38,29 @@ class WalletNotFoundError(AppError):
 
 
 class AmountOutOfRangeError(AppError):
+    """Monto fuera de rango; los límites por defecto son los de la recarga (HU-08)."""
+
     status = 422
     code = "amount_out_of_range"
     title = "Monto fuera de rango"
 
-    def __init__(self) -> None:
-        detail = f"El monto debe estar entre {to_json(RECHARGE_MIN)} y {to_json(RECHARGE_MAX)} COP."
+    def __init__(self, minimum: Decimal = RECHARGE_MIN, maximum: Decimal = RECHARGE_MAX) -> None:
+        low, high = to_json(minimum), to_json(maximum)
         super().__init__(
-            detail,
-            errors=[
-                {
-                    "field": "amount",
-                    "message": (
-                        f"Debe estar entre {to_json(RECHARGE_MIN)} y {to_json(RECHARGE_MAX)}"
-                    ),
-                }
-            ],
+            f"El monto debe estar entre {low} y {high} COP.",
+            errors=[{"field": "amount", "message": f"Debe estar entre {low} y {high}"}],
         )
+
+
+class InsufficientBalanceError(AppError):
+    """El saldo del emisor es menor que el monto (HU-06 CA-6, HU-07 CA-2)."""
+
+    status = 422
+    code = "insufficient_balance"
+    title = "Saldo insuficiente"
+
+    def __init__(self) -> None:
+        super().__init__("El saldo disponible es menor que el monto solicitado.")
 
 
 class DuplicateIdempotencyKeyError(AppError):
@@ -85,6 +93,72 @@ def get_wallet_id(user_id: int, repo: WalletRepository = default_repository) -> 
     """Id de la billetera del usuario, o None si no tiene (sin abrir transacción propia)."""
     wallet = repo.get_wallet_by_user(user_id)
     return None if wallet is None else wallet.id
+
+
+@dataclass(frozen=True)
+class WalletBalance:
+    balance: Decimal
+
+
+def get_balance(user_id: int, repo: WalletRepository = default_repository) -> WalletBalance:
+    """Saldo persistido de la billetera del usuario (HU-05). Solo lectura: sin bloqueo.
+
+    Sin billetera (dato inconsistente) lanza `WalletNotFoundError` y registra el error
+    técnico (HU-05 CA-5); no se crea una billetera a escondidas.
+    """
+    wallet = repo.get_wallet_by_user(user_id)
+    if wallet is None:
+        log.warning("wallet.missing", extra={"user_id": user_id})
+        raise WalletNotFoundError("El saldo no está disponible: la cuenta no tiene billetera.")
+    return WalletBalance(balance=wallet.balance)
+
+
+@dataclass(frozen=True)
+class WalletOwner:
+    """Titular de una billetera, para que otros módulos enmascaren la contraparte (HU-09 CA-3)."""
+
+    wallet_id: int
+    user_id: int
+    phone: str
+    full_name: str | None
+
+
+def get_wallet_owners(
+    wallet_ids: Iterable[int], repo: WalletRepository = default_repository
+) -> dict[int, WalletOwner]:
+    """Billetera → titular; ids inexistentes se omiten. Usa accounts_service, nunca sus tablas."""
+    wallets = repo.get_wallets_by_ids(wallet_ids)
+    users = accounts_service.get_users_by_ids(w.user_id for w in wallets)
+    return {
+        w.id: WalletOwner(
+            wallet_id=w.id, user_id=w.user_id, phone=user.phone, full_name=user.full_name
+        )
+        for w in wallets
+        if (user := users.get(w.user_id)) is not None
+    }
+
+
+def transfer_funds(
+    sender_wallet_id: int,
+    receiver_wallet_id: int,
+    amount: Decimal,
+    repo: WalletRepository = default_repository,
+) -> Decimal:
+    """Debita al emisor y acredita al receptor bajo bloqueo; devuelve el saldo final del emisor.
+
+    No abre ni cierra la transacción: participa en la del llamador, que también inserta el
+    movimiento y la clave idempotente (architecture.md). Bloquea ambas billeteras en orden
+    ascendente de id y revalida el saldo con el bloqueo ya tomado (HU-07 CA-2, CA-9).
+    """
+    locked = {w.id: w for w in repo.lock_wallets([sender_wallet_id, receiver_wallet_id])}
+    sender, receiver = locked.get(sender_wallet_id), locked.get(receiver_wallet_id)
+    if sender is None or receiver is None:
+        raise WalletNotFoundError("La billetera de la transferencia no existe.")
+    if sender.balance < amount:
+        raise InsufficientBalanceError
+    sender.balance = sender.balance - amount
+    receiver.balance = receiver.balance + amount
+    return sender.balance
 
 
 def create_wallet(user_id: int, repo: WalletRepository = default_repository) -> int:

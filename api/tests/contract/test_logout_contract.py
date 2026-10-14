@@ -1,5 +1,6 @@
 """HU-03 CA-1/CA-2: respuestas contra OpenAPI, sin valores de sesión en JSON."""
 
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -28,12 +29,13 @@ def test_logout_success_matches_no_content_contract(
 
 def test_session_status_matches_schema(client: FlaskClient, mocker: MockerFixture) -> None:
     mocker.patch("app.common.auth.current_user_id", return_value=1)
+    mocker.patch("app.modules.auth.routes.current_user_id", return_value=1)
     mocker.patch(
-        "app.modules.auth.service.session_expiry", return_value="2099-01-01T00:00:00+00:00"
+        "app.modules.auth.routes.current_session_expires_at", return_value=datetime(2099, 1, 1)
     )
     response = client.get("/api/v1/auth/session")
     assert response.status_code == 200
-    validate(response.get_json(), CONTRACT["components"]["schemas"]["SessionStatus"])
+    validate(response.get_json(), CONTRACT["components"]["schemas"]["SessionOut"])
 
 
 def test_logout_unauthenticated_matches_problem_schema(client: FlaskClient) -> None:

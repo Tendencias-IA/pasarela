@@ -123,3 +123,66 @@ def test_duplicate_key_race_is_reported_as_in_progress(
 
     with pytest.raises(service.DuplicateIdempotencyKeyError):
         service.recharge(1, Decimal("5000.00"), CTX, repo=repo)
+
+
+def test_amount_out_of_range_defaults_to_recharge_limits() -> None:
+    error = AmountOutOfRangeError()
+
+    assert "5000.00" in error.detail and "5000000.00" in error.detail
+    assert error.errors[0]["message"] == "Debe estar entre 5000.00 y 5000000.00"
+
+
+def test_amount_out_of_range_accepts_transfer_limits() -> None:
+    """HU-06 CA-2, CA-3: mismo código y formato de mensaje con otros límites."""
+    error = AmountOutOfRangeError(Decimal("100.00"), Decimal("3000000.00"))
+
+    assert error.code == "amount_out_of_range"
+    assert error.errors == [{"field": "amount", "message": "Debe estar entre 100.00 y 3000000.00"}]
+    assert error.detail == "El monto debe estar entre 100.00 y 3000000.00 COP."
+
+
+def test_insufficient_balance_error_is_a_422_business_error() -> None:
+    """HU-06 CA-6."""
+    error = service.InsufficientBalanceError()
+
+    assert (error.status, error.code) == (422, "insufficient_balance")
+    assert error.detail == "El saldo disponible es menor que el monto solicitado."
+
+
+def test_transfer_funds_moves_amount_and_locks_wallets_in_ascending_id_order(
+    app: Flask, repo: FakeWalletRepository
+) -> None:
+    """HU-07 CA-3, CA-4, RNF-04.2: bloqueo en orden de id aunque el emisor tenga el id mayor."""
+    sender, receiver = repo.wallets[2].id, repo.wallets[1].id
+
+    balance_after = service.transfer_funds(sender, receiver, Decimal("1000.00"), repo=repo)
+
+    assert balance_after == Decimal("4994000.00")
+    assert repo.wallets[2].balance == Decimal("4994000.00")
+    assert repo.wallets[1].balance == Decimal("1000.00")
+    assert repo.locked_wallet_ids == [[1, 2]]
+
+
+def test_transfer_funds_with_insufficient_balance_changes_nothing(
+    app: Flask, repo: FakeWalletRepository
+) -> None:
+    """HU-07 CA-2, CA-6."""
+    with pytest.raises(service.InsufficientBalanceError):
+        service.transfer_funds(repo.wallets[1].id, repo.wallets[2].id, Decimal("0.01"), repo=repo)
+
+    assert repo.wallets[1].balance == Decimal("0.00")
+    assert repo.wallets[2].balance == Decimal("4995000.00")
+
+
+def test_transfer_funds_allows_spending_the_whole_balance(
+    app: Flask, repo: FakeWalletRepository
+) -> None:
+    """HU-07 CA-9: el saldo exacto es gastable y deja cero."""
+    assert service.transfer_funds(2, 1, Decimal("4995000.00"), repo=repo) == Decimal("0.00")
+
+
+def test_transfer_funds_with_missing_wallet_raises_wallet_not_found(
+    app: Flask, repo: FakeWalletRepository
+) -> None:
+    with pytest.raises(WalletNotFoundError):
+        service.transfer_funds(1, 99, Decimal("1000.00"), repo=repo)

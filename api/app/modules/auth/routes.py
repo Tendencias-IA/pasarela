@@ -5,13 +5,18 @@ Contrato fijo en .claude/rules/api-design.md: éxito es 204 + cookie, sin cuerpo
 
 from __future__ import annotations
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, g, jsonify, request
 from flask_limiter.util import get_remote_address
 
-from app.common.auth import SESSION_COOKIE_NAME, login_required
+from app.common.auth import (
+    SESSION_COOKIE_NAME,
+    current_session_expires_at,
+    current_user_id,
+    login_required,
+)
 from app.extensions import limiter
 from app.modules.auth import service
-from app.modules.auth.schemas import LoginIn
+from app.modules.auth.schemas import LoginIn, SessionOut
 
 bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
@@ -40,10 +45,42 @@ def login() -> Response:
     return response
 
 
+@bp.get("/session")
+@login_required
+def get_session() -> tuple[Response, int]:
+    """Vencimiento vigente de la sesión (HU-04). Consultarlo cuenta como actividad."""
+    current_user_id()
+    expires_at = current_session_expires_at().replace(microsecond=0).isoformat() + "Z"
+    return jsonify(SessionOut(expires_at=expires_at).model_dump()), 200
+
+
+@bp.after_app_request
+def renew_session_cookie(response: Response) -> Response:
+    """HU-04 CA-4: la cookie se renueva junto con la sesión del servidor.
+
+    Sin esto la cookie caducaría a los 5 minutos del login aunque el usuario siga activo.
+    Solo se renueva si esta petición tocó una sesión válida (`g.session_expires_at`).
+    """
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if token and getattr(g, "session_expires_at", None) is not None:
+        response.set_cookie(
+            SESSION_COOKIE_NAME,
+            token,
+            httponly=True,
+            samesite="Lax",
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
+            max_age=int(current_app.config["SESSION_IDLE"].total_seconds()),
+        )
+    return response
+
+
 @bp.post("/logout")
 @login_required
 def logout() -> Response:
     service.logout(request.cookies.get(SESSION_COOKIE_NAME))
+    # HU-04 renueva la cookie en cada respuesta con sesión válida; aquí la sesión acaba de
+    # revocarse y la cookie debe quedar borrada (HU-03 CA-1), no renovada.
+    g.pop("session_expires_at", None)
     response = current_app.make_response(("", 204))
     response.delete_cookie(
         SESSION_COOKIE_NAME,
@@ -52,9 +89,3 @@ def logout() -> Response:
         secure=current_app.config["SESSION_COOKIE_SECURE"],
     )
     return response
-
-
-@bp.get("/session")
-@login_required
-def session_status() -> Response:
-    return jsonify(expires_at=service.session_expiry(request.cookies.get(SESSION_COOKIE_NAME)))

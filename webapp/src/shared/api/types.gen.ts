@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saldo disponible de la billetera del usuario autenticado (HU-05) */
+        get: operations["getWallet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallet/recharges": {
         parameters: {
             query?: never;
@@ -21,6 +38,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial paginado de movimientos de la billetera del usuario autenticado (HU-09) */
+        get: operations["listMovements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar y ejecutar una transferencia desde la billetera del usuario autenticado (HU-07)
+         * @description Una sola operación atómica: descuenta al emisor, acredita al destinatario y registra el movimiento. El servidor revalida sesión, destinatario, monto, límites, titularidad y saldo.
+         */
+        post: operations["createTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validar una transferencia y devolver su resumen sin ejecutarla (HU-06)
+         * @description Consulta pura: no modifica saldos, no crea movimientos ni usa Idempotency-Key (HU-06 CA-8). El servidor revalida todo al confirmar (HU-07).
+         */
+        post: operations["previewTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -30,6 +104,23 @@ export interface paths {
         };
         /** Estado del servicio, sin sesión */
         get: operations["health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vencimiento de la sesión; la consulta cuenta como actividad (HU-04) */
+        get: operations["getSession"];
         put?: never;
         post?: never;
         delete?: never;
@@ -112,6 +203,9 @@ export interface components {
          * @example 50000.00
          */
         Money: string;
+        WalletOut: {
+            balance: components["schemas"]["Money"];
+        };
         RechargeIn: {
             /**
              * @description Entre 5000.00 y 5000000.00 inclusive; hasta dos decimales; siempre cadena.
@@ -130,6 +224,81 @@ export interface components {
             balance_after: components["schemas"]["Money"];
             /** Format: date-time */
             created_at: string;
+        };
+        /** @description Otro participante de una transferencia, ya enmascarado en el servidor (RNF-06). */
+        Counterparty: {
+            /**
+             * @description Iniciales con asteriscos ("Mar** G****"); null mientras HU-01 no registre el nombre.
+             * @example Mar** G****
+             */
+            name_masked: string | null;
+            /** @example ***4567 */
+            phone_masked: string;
+        };
+        MovementOut: {
+            /** Format: int64 */
+            id: number;
+            /**
+             * @description Punto de vista de la billetera del usuario autenticado.
+             * @enum {string}
+             */
+            direction: "recarga" | "enviada" | "recibida";
+            /** @enum {string} */
+            type: "recarga" | "transferencia";
+            /** @enum {string} */
+            status: "exitosa" | "rechazada";
+            amount: components["schemas"]["Money"];
+            /** Format: date-time */
+            created_at: string;
+            /** @description Código del motivo cuando status = rechazada. */
+            rejection_reason: string | null;
+            /** @description Solo en transferencias; null en recargas. */
+            counterparty: components["schemas"]["Counterparty"] | null;
+        };
+        MovementsPageOut: {
+            items: components["schemas"]["MovementOut"][];
+            page: number;
+            /** @enum {integer} */
+            page_size: 20;
+            total: number;
+        };
+        TransferIn: {
+            /** @description Celular del destinatario (diez dígitos, empieza por 3). */
+            recipient_phone: string;
+            /**
+             * @description Entre 100.00 y 3000000.00 inclusive; hasta dos decimales; siempre cadena.
+             * @example 150000.00
+             */
+            amount: string;
+        };
+        /** @description Destinatario ya enmascarado en el servidor (RNF-06). */
+        RecipientMasked: {
+            /** @example Mar** G**** */
+            name_masked: string | null;
+            /** @example ***4567 */
+            phone_masked: string;
+        };
+        TransferPreviewOut: {
+            amount: components["schemas"]["Money"];
+            recipient: components["schemas"]["RecipientMasked"];
+            balance_after: components["schemas"]["Money"];
+        };
+        TransferOut: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            type: "transferencia";
+            /** @enum {string} */
+            status: "exitosa";
+            amount: components["schemas"]["Money"];
+            recipient: components["schemas"]["RecipientMasked"];
+            balance_after: components["schemas"]["Money"];
+            /** Format: date-time */
+            created_at: string;
+        };
+        SessionOut: {
+            /** Format: date-time */
+            expires_at: string;
         };
         LoginIn: {
             phone: string;
@@ -174,6 +343,44 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saldo persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletOut"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description La cuenta no tiene billetera (code `wallet_not_found`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createRecharge: {
         parameters: {
             query?: never;
@@ -250,6 +457,202 @@ export interface operations {
             };
         };
     };
+    listMovements: {
+        parameters: {
+            query?: {
+                /** @description Número de página desde 1. Página inexistente responde items vacío con el total real. */
+                page?: number;
+                /** @description Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1). */
+                from?: string;
+                /** @description Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2). */
+                to?: string;
+                /** @description Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4). */
+                type?: "all" | "sent" | "received" | "recharge";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
+            200: {
+                headers: {
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementsPageOut"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo, todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID v4 generado por la webapp al mostrar el resumen; repetirlo reproduce la respuesta original. */
+                "Idempotency-Key": string;
+                "X-Requested-With": "fetch";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferIn"];
+            };
+        };
+        responses: {
+            /** @description Transferencia aplicada (o reproducida si la clave ya existía; ver cabecera Idempotent-Replayed) */
+            201: {
+                headers: {
+                    /** @description Presente con valor "true" cuando la respuesta se reprodujo desde una solicitud anterior. */
+                    "Idempotent-Replayed"?: "true";
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferOut"];
+                };
+            };
+            /** @description Falta la cabecera Idempotency-Key o no es un UUID (code `missing_idempotency_key`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Falta X-Requested-With (code `missing_requested_with`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Destinatario inexistente o sin billetera (code `recipient_not_found`) o el emisor no tiene billetera (code `wallet_not_found`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Otra solicitud con la misma clave está en curso y aún no hay respuesta para reproducir (code `idempotency_key_in_progress`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Formato inválido (code `validation`), monto fuera de 100.00..3000000.00 (code `amount_out_of_range`), destinatario igual al emisor (code `self_transfer`), saldo insuficiente (code `insufficient_balance`) o misma Idempotency-Key con cuerpo distinto (code `idempotency_key_mismatch`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    previewTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Requested-With": "fetch";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferIn"];
+            };
+        };
+        responses: {
+            /** @description Resumen con el monto, el destinatario enmascarado y el saldo que quedaría */
+            200: {
+                headers: {
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferPreviewOut"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Falta X-Requested-With (code `missing_requested_with`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Destinatario inexistente o sin billetera (code `recipient_not_found`) o el emisor no tiene billetera (code `wallet_not_found`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Formato inválido (code `validation`, errors[] con recipient_phone y/o amount), monto fuera de 100.00..3000000.00 (code `amount_out_of_range`), destinatario igual al emisor (code `self_transfer`) o saldo insuficiente (code `insufficient_balance`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     health: {
         parameters: {
             query?: never;
@@ -285,6 +688,35 @@ export interface operations {
                         /** @enum {string} */
                         db: "error";
                     };
+                };
+            };
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión vigente; la cookie se renueva con el nuevo vencimiento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Sin sesión, vencida o revocada (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

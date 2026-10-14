@@ -23,6 +23,8 @@ import {
 import type { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
+import { useLogout } from "../features/auth/useLogout";
+
 const NAV = [
   { href: "/", label: "Inicio", icon: homeOutline },
   { href: "/transferir", label: "Transferir", icon: swapHorizontalOutline },
@@ -34,6 +36,7 @@ const NAV = [
 /** Barra lateral del diseño: menú fijo en escritorio y deslizable en móvil (IonSplitPane). */
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const { logout, failed } = useLogout();
   return (
     <IonSplitPane contentId="main" when="(min-width: 992px)">
       <IonMenu contentId="main" type="overlay">
@@ -59,10 +62,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               </IonMenuToggle>
             ))}
             <IonMenuToggle autoHide={false}>
-              <IonItem routerLink="/login" routerDirection="none" detail={false}>
+              <IonItem
+                button
+                detail={false}
+                onClick={() => {
+                  void logout();
+                }}
+              >
                 <IonIcon slot="start" icon={logOutOutline} aria-hidden="true" />
                 <IonLabel>Cerrar sesión</IonLabel>
               </IonItem>
+              {failed && (
+                <p role="alert" className="tai-muted" style={{ margin: "4px 16px" }}>
+                  No se pudo cerrar la sesión. Intenta de nuevo.
+                </p>
+              )}
             </IonMenuToggle>
           </IonList>
         </IonContent>

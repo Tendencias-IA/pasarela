@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { renderWithProviders as render } from "../../../test/render";
 import { RechargePage } from "../RechargePage";
 
 /** Ionic no se hidrata en jsdom: aquí solo se verifica el render; la interacción vive en Playwright. */

@@ -1,6 +1,7 @@
 """HU-01 registration orchestration."""
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -41,6 +42,23 @@ def register_account(data: RegisterAccountIn) -> RegisteredAccount:
 def get_user_by_phone(phone: str) -> User | None:
     """Stable accounts API consumed by the login module."""
     return repository.get_by_phone(phone)
+
+
+@dataclass(frozen=True)
+class UserSummary:
+    """Datos de un usuario que otros módulos pueden conocer (HU-09 CA-3, HU-06 CA-7)."""
+
+    id: int
+    phone: str
+    full_name: str | None
+
+
+def get_users_by_ids(user_ids: Iterable[int]) -> dict[int, UserSummary]:
+    """Resumen por id; los ids inexistentes se omiten. Quien lo consume enmascara."""
+    return {
+        user.id: UserSummary(id=user.id, phone=user.phone, full_name=user.full_name)
+        for user in repository.get_by_ids(user_ids)
+    }
 
 
 class ProfileNotFoundError(AppError):

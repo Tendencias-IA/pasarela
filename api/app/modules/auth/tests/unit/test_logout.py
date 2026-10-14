@@ -18,9 +18,3 @@ def test_logout_invalid_or_already_revoked_rejects(
 
     with pytest.raises(service.InvalidSessionError):
         service.logout("token-ficticio")
-
-
-def test_session_expiry_invalid_rejects(mocker: MockerFixture) -> None:
-    mocker.patch.object(service, "get_current_session", return_value=None)
-    with pytest.raises(service.InvalidSessionError):
-        service.session_expiry(None)

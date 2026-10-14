@@ -31,10 +31,14 @@ def create_app(config_name: str | None = None) -> Flask:
     from app.modules.accounts.profile_routes import bp as profile_bp
     from app.modules.accounts.routes import blueprint as accounts_bp
     from app.modules.auth.routes import bp as auth_bp
+    from app.modules.movements import routes as movements_routes
+    from app.modules.transfers import routes as transfers_routes
     from app.modules.wallet import routes as wallet_routes
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(wallet_routes.bp, url_prefix="/api/v1/wallet")
+    app.register_blueprint(movements_routes.bp, url_prefix="/api/v1/movements")
+    app.register_blueprint(transfers_routes.bp, url_prefix="/api/v1/transfers")
     return app

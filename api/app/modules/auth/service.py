@@ -11,18 +11,22 @@ import hmac
 import logging
 import secrets
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timedelta
 
 from flask import current_app
 
+from app.common.clock import utcnow
 from app.common.errors import AppError
 from app.common.passwords import hash_password, verify_password
-from app.extensions import db, transaction
+from app.extensions import transaction
 from app.modules.accounts import service as accounts_service
 from app.modules.auth import repository
 from app.modules.auth.models import Session
 
 log = logging.getLogger("app.auth")
+
+# HU-04: no se escribe en cada petición; con actividad hace menos de 10 s no se reescribe.
+TOUCH_THRESHOLD = timedelta(seconds=10)
 
 # Hash señuelo constante: se verifica siempre, exista o no el teléfono, para que el
 # tiempo de respuesta no revele cuál credencial falló (RNF-01.5).
@@ -47,10 +51,6 @@ class LoginResult:
     token: str
 
 
-def _utcnow() -> datetime:
-    return datetime.now(UTC).replace(tzinfo=None)
-
-
 def _mask_phone(phone: str) -> str:
     return f"***{phone[-4:]}" if len(phone) >= 4 else "***"
 
@@ -60,10 +60,10 @@ def _hash_token(token: str) -> str:
 
 
 def login(phone: str, password: str) -> LoginResult:
-    # La lectura y la escritura viven en el mismo `with db.session.begin():`: SQLAlchemy
-    # 2.0 abre una transacción implícita en el primer SELECT (autobegin), así que un
-    # `begin()` posterior a una lectura suelta falla con "ya hay una transacción abierta".
-    with db.session.begin():
+    # La lectura y la escritura viven en el mismo `with transaction():` (app/extensions.py):
+    # SQLAlchemy 2.0 abre una transacción implícita en el primer SELECT (autobegin) y
+    # `db.session.begin()` fallaría si ya hay una abierta en la petición.
+    with transaction():
         user = accounts_service.get_user_by_phone(phone)
 
         if user is None:
@@ -76,7 +76,7 @@ def login(phone: str, password: str) -> LoginResult:
             raise InvalidCredentialsError()
 
         token = secrets.token_urlsafe(32)
-        expires_at = _utcnow() + current_app.config["SESSION_IDLE"]
+        expires_at = utcnow() + current_app.config["SESSION_IDLE"]
         user_id = user.id
         session = repository.create_session(user_id, _hash_token(token), expires_at)
 
@@ -98,24 +98,45 @@ def get_current_session(token: str | None) -> Session | None:
         return None
     if session.revoked_at is not None:
         return None
-    if session.expires_at <= _utcnow():
+    now = utcnow()
+    if session.expires_at <= now:
+        _revoke_expired(session, now)
         return None
     return session
+
+
+def _revoke_expired(session: Session, now: datetime) -> None:
+    """Limpieza perezosa (HU-04 CA-1): la sesión vencida queda revocada, sin cron."""
+    user_id = session.user_id
+    with transaction():
+        session.revoked_at = now
+    log.info("auth.session_expired", extra={"user_id": user_id})
+
+
+def touch_session(session: Session) -> datetime:
+    """Reinicia el periodo de inactividad y devuelve el nuevo vencimiento (HU-04 CA-4).
+
+    La actividad válida extiende `expires_at` a ahora + SESSION_IDLE. Si la última
+    actividad fue hace menos de TOUCH_THRESHOLD no escribe (menos carga en MySQL); una
+    `last_activity_at` en el futuro (reloj adelantado) sí fuerza la escritura.
+    """
+    now = utcnow()
+    elapsed = now - session.last_activity_at
+    if timedelta(0) <= elapsed < TOUCH_THRESHOLD:
+        current: datetime = session.expires_at
+        return current
+    expires_at: datetime = now + current_app.config["SESSION_IDLE"]
+    with transaction():
+        session.last_activity_at = now
+        session.expires_at = expires_at
+    return expires_at
 
 
 def logout(token: str | None) -> None:
     """HU-03 CA-1/CA-4: revoca únicamente la sesión activa, sin modificar la cuenta."""
     with transaction():
         session = get_current_session(token)
-        if session is None or not repository.revoke_session(session.id, _utcnow()):
+        if session is None or not repository.revoke_session(session.id, utcnow()):
             raise InvalidSessionError("Inicia sesión para continuar.")
         user_id = session.user_id
     log.info("auth.logout", extra={"user_id": user_id})
-
-
-def session_expiry(token: str | None) -> str:
-    """Consulta mínima de acceso para HU-03 CA-2/CA-3, sin renovar la sesión."""
-    session = get_current_session(token)
-    if session is None:
-        raise InvalidSessionError("Inicia sesión para continuar.")
-    return session.expires_at.replace(tzinfo=UTC).isoformat()

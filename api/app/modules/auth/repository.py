@@ -8,12 +8,19 @@ from typing import Any, cast
 from sqlalchemy import select, update
 from sqlalchemy.engine import CursorResult
 
+from app.common.clock import utcnow
 from app.extensions import db
 from app.modules.auth.models import Session
 
 
 def create_session(user_id: int, token_hash: str, expires_at: datetime) -> Session:
-    session = Session(user_id=user_id, token_hash=token_hash, expires_at=expires_at)
+    # last_activity_at con el reloj de Python (UTC), igual que expires_at: nunca now() de MySQL.
+    session = Session(
+        user_id=user_id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+        last_activity_at=utcnow(),
+    )
     db.session.add(session)
     return session
 

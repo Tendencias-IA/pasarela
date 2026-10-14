@@ -3,6 +3,7 @@ import { setupIonicReact } from "@ionic/react";
 import { cleanup } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll } from "vitest";
 
+import { queryClient } from "../app/queryClient";
 import { server } from "./server";
 
 setupIonicReact();
@@ -29,6 +30,7 @@ beforeAll(() => {
 });
 afterEach(() => {
   server.resetHandlers();
+  queryClient.clear(); // el QueryClient global de App no debe filtrar datos entre tests
   cleanup();
 });
 afterAll(() => {

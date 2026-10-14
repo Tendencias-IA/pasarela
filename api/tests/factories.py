@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 
+from app.common.clock import utcnow
+from app.common.models.transaction import Transaction, TransactionStatus, TransactionType
 from app.common.passwords import hash_password
 from app.modules.accounts.models import User
 
@@ -35,4 +39,26 @@ def make_user(phone: str | None = None, password: str = "Clave1234") -> SeededUs
         user=User(phone=phone, password_hash=hash_password(password)),
         phone=phone,
         password=password,
+    )
+
+
+def make_transaction(
+    *,
+    type_: TransactionType,
+    status: TransactionStatus,
+    amount: Decimal,
+    receiver_wallet_id: int,
+    sender_wallet_id: int | None = None,
+    rejection_reason: str | None = None,
+    created_at: datetime | None = None,
+) -> Transaction:
+    """Fila de `transactions` sin persistir, con `created_at` controlable (orden y paginación)."""
+    return Transaction(
+        type=type_,
+        status=status,
+        amount=amount,
+        receiver_wallet_id=receiver_wallet_id,
+        sender_wallet_id=sender_wallet_id,
+        rejection_reason=rejection_reason,
+        created_at=created_at or utcnow(),
     )
