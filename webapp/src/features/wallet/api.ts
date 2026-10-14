@@ -12,3 +12,10 @@ export function postRecharge(amount: string, idempotencyKey: string, signal?: Ab
     signal,
   });
 }
+
+export type WalletOut = components["schemas"]["WalletOut"];
+
+/** GET /api/v1/wallet (HU-05). El usuario sale de la sesión: la petición no lleva ids. */
+export function getWallet(signal?: AbortSignal) {
+  return request<WalletOut>("/api/v1/wallet", { signal });
+}

@@ -10,13 +10,49 @@ import {
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 
+import { useWallet } from "../features/wallet/useWallet";
 import { ApiError } from "../shared/api/client";
+import { formatCOP } from "../shared/money";
 import { getHealth, type Health } from "./health";
 
 type State =
   { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "error"; message: string };
 
-/** Panel inicial del esqueleto. El saldo llega con HU-05; hoy muestra el estado de la API. */
+/** Tarjeta "Saldo disponible" (HU-05): saldo persistido, cargando, no disponible o error. */
+function BalanceCard() {
+  const { data, error, isPending, refetch } = useWallet();
+  const missing = error instanceof ApiError && error.code === "wallet_not_found";
+
+  return (
+    <section aria-labelledby="saldo-title" className="tai-card" style={{ marginTop: 16 }}>
+      <h2 id="saldo-title" style={{ margin: "0 0 8px", fontSize: 17 }}>
+        Saldo disponible
+      </h2>
+      {isPending && <p role="status">Consultando saldo…</p>}
+      {data !== undefined && (
+        <p data-balance={data.balance} style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
+          {formatCOP(data.balance)}
+        </p>
+      )}
+      {missing && <p role="alert">Saldo no disponible</p>}
+      {error !== null && !missing && (
+        <>
+          <p role="alert">No se pudo consultar el saldo</p>
+          <IonButton
+            fill="outline"
+            onClick={() => {
+              void refetch();
+            }}
+          >
+            Reintentar
+          </IonButton>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Panel inicial: saldo (HU-05) y, del esqueleto, el estado de la API. */
 export function HomePage() {
   const [state, setState] = useState<State>({ kind: "loading" });
 
@@ -49,6 +85,7 @@ export function HomePage() {
       </IonHeader>
       <IonContent className="ion-padding">
         <h1 className="tai-title">Billetera Digital</h1>
+        <BalanceCard />
         <section aria-labelledby="estado-api" className="tai-card" style={{ marginTop: 16 }}>
           <h2 id="estado-api" style={{ margin: "0 0 8px", fontSize: 17 }}>
             Estado de la API

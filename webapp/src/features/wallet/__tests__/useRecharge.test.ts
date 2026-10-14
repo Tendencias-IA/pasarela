@@ -7,6 +7,7 @@ import { renderHookWithProviders as renderHook } from "../../../test/render";
 import { server } from "../../../test/server";
 import { useMovements } from "../../movements/useMovements";
 import { FORMAT_MESSAGE, RANGE_MESSAGE, useRecharge } from "../useRecharge";
+import { useWallet } from "../useWallet";
 
 const URL = "/api/v1/wallet/recharges";
 
@@ -259,6 +260,31 @@ describe("useRecharge (HU-08)", () => {
 
     await waitFor(() => {
       expect(movementsRequests).toBe(2);
+    });
+  });
+
+  it("invalida la query de saldo tras una recarga exitosa (HU-05 CA-3, webapp.md)", async () => {
+    let walletRequests = 0;
+    server.use(
+      http.post(URL, () => okResponse("50000.00", "50000.00")),
+      http.get("/api/v1/wallet", () => {
+        walletRequests += 1;
+        return HttpResponse.json({ balance: "0.00" });
+      }),
+    );
+    const { result } = renderHook(() => ({ recharge: useRecharge(), wallet: useWallet() }));
+    await waitFor(() => {
+      expect(result.current.wallet.data).toBeDefined();
+    });
+    expect(walletRequests).toBe(1);
+
+    act(() => {
+      result.current.recharge.setAmount("50000");
+    });
+    await act(() => result.current.recharge.submit());
+
+    await waitFor(() => {
+      expect(walletRequests).toBe(2);
     });
   });
 });
