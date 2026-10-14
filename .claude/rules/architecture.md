@@ -113,7 +113,7 @@ try:
         wallets = repository.lock_wallets([sender_id, receiver_id])  # SELECT ... FOR UPDATE ORDER BY id
         sender, receiver = wallets[sender_id], wallets[receiver_id]
         if sender.balance < amount:
-            raise InsufficientBalance()      # rollback: ningún saldo cambia
+            raise InsufficientBalanceError()      # rollback: ningún saldo cambia
         sender.balance -= amount
         receiver.balance += amount
         repository.add_transaction(..., status="exitosa")

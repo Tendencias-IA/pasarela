@@ -61,10 +61,10 @@ docker compose logs -f api | jq           # logs JSON de la API
 - Los servicios de aplicación van bajo el perfil `app` para que `docker compose up -d
   mysql` siga siendo el camino rápido de desarrollo.
 
-## Al crear `api/` y `webapp/`
+## Contrato con `api/` y `webapp/`
 
-- `api/pyproject.toml` debe permitir `pip install .` sin extras de desarrollo (los extras
+- `api/pyproject.toml` permite `pip install .` sin extras de desarrollo (los extras
   `[dev]` no entran en la imagen).
-- `webapp/package.json` debe tener `build` que escriba en `dist/`.
-- Ninguna de las dos carpetas necesita `Dockerfile` propio: las imágenes viven en
-  `docker/` y toman el contexto desde la raíz.
+- `webapp/package.json` tiene `build` que escribe en `dist/`.
+- Ninguna de las dos carpetas tiene `Dockerfile` propio: las imágenes viven en `docker/`
+  y toman el contexto desde la raíz.

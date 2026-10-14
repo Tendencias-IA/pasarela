@@ -96,9 +96,9 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
   servicios llamados desde otro servicio no abren ni cierran transacciones; reciben la
   sesión implícita.
 - Errores de negocio son excepciones que heredan de `AppError` (`app/common/errors.py`)
-  con `status`, `code` y `detail`: `InsufficientBalance`, `RecipientNotFound`,
-  `SelfTransfer`, `AmountOutOfRange`, `DuplicateIdentity`, `InvalidCredentials`,
-  `SessionExpired`. El manejador global las convierte a RFC 9457. Nunca `return None`
+  con `status`, `code` y `detail`, nombradas con sufijo `Error` (regla N818 de Ruff): `InsufficientBalanceError`, `RecipientNotFoundError`,
+  `SelfTransferError`, `AmountOutOfRangeError`, `DuplicateIdentityError`, `InvalidCredentialsError`,
+  `SessionExpiredError`. El manejador global las convierte a RFC 9457. Nunca `return None`
   para señalar fallo.
 - Un servicio que no se puede nombrar sin "y" se divide (`validate_and_transfer` →
   `preview_transfer` + `confirm_transfer`).
@@ -141,6 +141,8 @@ ruta, así que no se pueden probar sin Flask ni reutilizar, y el error no sigue 
 Añadir una dependencia requiere ADR corto en `docs/adr/` y commit propio
 (`build(PPA-n): add <paquete>`), nunca mezclado con la funcionalidad. Versiones fijadas
 en `pyproject.toml` con `~=`. Lista inicial permitida: `flask`, `flask-sqlalchemy`,
-`flask-migrate`, `sqlalchemy`, `alembic`, `pymysql`, `pydantic`, `argon2-cffi`,
-`flask-limiter`, `python-json-logger`, `gunicorn`; dev: `pytest`, `pytest-cov`,
-`pytest-mock`, `ruff`, `mypy`, `testcontainers[mysql]`, `schemathesis`, `locust`.
+`flask-migrate`, `sqlalchemy`, `alembic`, `pymysql`, `cryptography` (autenticación de
+MySQL 8), `pydantic`, `argon2-cffi`, `flask-limiter`, `python-json-logger`, `gunicorn`;
+dev: `pytest`, `pytest-cov`, `pytest-mock`, `ruff`, `mypy`, `testcontainers[mysql]`,
+`schemathesis`; extra `load` (solo el job nocturno): `locust`, porque registra un plugin de
+pytest que cuelga la recolección de pruebas.

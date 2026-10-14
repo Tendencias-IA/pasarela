@@ -151,12 +151,16 @@ export class TransferPage {
 ## Dependencias
 
 Misma política que la API: añadir una dependencia requiere ADR corto y commit propio
-(`build(PPA-n): add <paquete>`), versiones fijadas en `package.json` sin `^`. Lista
-inicial permitida: `react`, `react-dom`, `react-router-dom`, `@tanstack/react-query`,
-`react-hook-form`; dev: `vite`, `typescript`, `vitest`, `@testing-library/react`,
-`@testing-library/user-event`, `jsdom`, `msw`, `@playwright/test`, `@axe-core/playwright`,
-`openapi-typescript`, `eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`,
-`typescript-eslint`, `prettier`.
+(`build(PPA-n): add <paquete>`), versiones exactas en `package.json` (`npm install
+--save-exact`). Node 22 (`.nvmrc`). Lista inicial permitida: `react`, `react-dom`,
+`react-router-dom`, `@tanstack/react-query`, `react-hook-form`; dev: `vite`,
+`@vitejs/plugin-react`, `typescript` 5.x, `vitest`, `@vitest/coverage-v8`,
+`@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`,
+`jsdom`, `msw` 2.x, `@playwright/test`, `@axe-core/playwright`, `openapi-typescript`,
+`eslint` 9.x, `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`,
+`eslint-plugin-jsx-a11y`, `globals`, `prettier`, `@types/react`, `@types/react-dom`,
+`@types/node`. ESLint se mantiene en 9 y TypeScript en 5 mientras `eslint-plugin-jsx-a11y`
+y `typescript-eslint` no soporten las versiones mayores siguientes.
 
 ## Qué no hacer
 

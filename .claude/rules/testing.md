@@ -43,7 +43,7 @@ Configuración en `pyproject.toml`:
 
 ```toml
 [tool.pytest.ini_options]
-addopts = "--cov=app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=90 -q"
+addopts = "--cov=app --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=90 -q --ignore=tests/load -p no:locust"
 testpaths = ["app", "tests"]
 
 [tool.coverage.run]
@@ -74,7 +74,7 @@ def test_confirm_transfer_concurrent_requests_never_overdraw(db_session, two_use
         try:
             transfer_service.confirm_transfer(sender.id, receiver.phone, Decimal("100000.00"))
             results.append(None)
-        except InsufficientBalance as exc:
+        except InsufficientBalanceError as exc:
             results.append(exc)
 
     threads = [threading.Thread(target=attempt) for _ in range(2)]

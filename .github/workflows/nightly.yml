@@ -2,9 +2,8 @@ name: Nightly
 
 on:
   workflow_dispatch:
-  # Activar el cron cuando existan api/ y webapp/; antes fallaría cada noche sin aportar nada.
-  # schedule:
-  #   - cron: "0 6 * * *"   # 01:00 Bogotá
+  schedule:
+    - cron: "0 6 * * *"   # 01:00 Bogotá
 
 permissions:
   contents: read
@@ -65,7 +64,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e "./api[dev]"
+      - run: pip install -e "./api[dev,load]"
       - name: Migrar y levantar la API
         run: |
           cd api

@@ -59,8 +59,8 @@ migra a SonarCloud cambiando solo las variables `SONAR_HOST_URL` y `SONAR_TOKEN`
 
 ## Gates nocturnos (no bloquean el PR, bloquean el release)
 
-Definidos en `.github/workflows/nightly.yml`. Hoy se ejecutan a mano (`workflow_dispatch`);
-el cron diario se activa en el mismo PR que cree `api/` y `webapp/`.
+Definidos en `.github/workflows/nightly.yml` (cron diario a la 01:00 de Bogotá y
+ejecución manual).
 
 - Prueba de carga con Locust (`api/tests/load/locustfile.py`): p95 ≤ 2 s en
   `GET /api/v1/wallet`, p95 ≤ 3 s en `GET /api/v1/movements`, `POST /api/v1/transfers` y

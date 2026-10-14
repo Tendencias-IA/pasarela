@@ -20,8 +20,8 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | `docs/adr/` | Decisiones de arquitectura (ADR). |
 | `docs/referencia/` | Especificación de requisitos e historias de usuario (fuente de verdad del negocio). |
 | `specs/` | Una carpeta por historia implementada: `spec.md`, `plan.md`, `tasks.md`. |
-| `api/` | API en Python + Flask (se crea al implementar la primera historia). |
-| `webapp/` | Aplicación web en React + Vite + TypeScript (se crea al implementar la primera historia). |
+| `api/` | API en Python + Flask: app factory, configuraciones, errores RFC 9457, logging JSON, `/health`, migraciones y pruebas. |
+| `webapp/` | Webapp en React + Vite + TypeScript: cliente HTTP, pantalla inicial, Vitest, Playwright. |
 | `.github/` | Plantilla de PR, CODEOWNERS y pipeline de CI. |
 | `docker-compose.yml`, `docker/` | MySQL local e imágenes de `api` y `webapp` (ver `.claude/rules/docker.md`). |
 
@@ -49,6 +49,6 @@ Detalles en `.claude/rules/docker.md`.
 
 ## Cómo empezar
 
-1. Clona el repositorio y abre Claude Code en la raíz.
+1. Clona el repositorio y abre Claude Code en la raíz. Requisitos: Python 3.12 (`uv venv --python 3.12`), Node 22 (`nvm use`), Docker.
 2. Lee `AGENTS.md` y `docs/sdd-workflow.md`.
 3. Toma un ticket PPA-n y sigue la guía.
