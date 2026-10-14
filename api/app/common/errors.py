@@ -27,6 +27,24 @@ class AppError(Exception):
         self.errors = errors or []
 
 
+class DuplicateIdentityError(AppError):
+    status = 409
+    code = "duplicate_identity"
+    title = "Cuenta ya registrada"
+
+    def __init__(self) -> None:
+        super().__init__("Ya existe una cuenta con alguno de esos datos.")
+
+
+class InvalidJsonError(AppError):
+    status = 400
+    code = "invalid_json"
+    title = "JSON inválido"
+
+    def __init__(self) -> None:
+        super().__init__("Envía un cuerpo JSON válido.")
+
+
 class ValidationError(AppError):
     status = 422
     code = "validation"

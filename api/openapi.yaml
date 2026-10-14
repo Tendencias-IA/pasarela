@@ -261,6 +261,133 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /api/v1/accounts:
+    post:
+      summary: Registrar una cuenta y su billetera con saldo inicial de $0 COP (HU-01)
+      operationId: registerAccount
+      security: []
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterAccountRequest"
+      responses:
+        "201":
+          description: Cuenta y billetera creadas de forma atómica, sin iniciar sesión
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterAccountResponse"
+        "400":
+          description: Cuerpo JSON inválido
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Teléfono, correo o identificación ya registrados
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "413":
+          description: Cuerpo superior al límite de 16 KB
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Uno o más campos ausentes o inválidos
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: Error inesperado sin persistencia parcial
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /api/v1/profile:
+    get:
+      operationId: getProfile
+      summary: Consultar el perfil propio para editar el teléfono
+      responses:
+        "200":
+          description: Perfil propio, sin contraseña
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    patch:
+      operationId: updatePhone
+      summary: Actualizar teléfono o correo propio (HU-12, HU-13)
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [fetch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/UpdatePhoneRequest"
+                - $ref: "#/components/schemas/UpdateEmailRequest"
+      responses:
+        "200":
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountProfile"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Perfil no encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Teléfono o correo ya registrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Campo ausente, inválido o no editable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   securitySchemes:
     sessionCookie:
@@ -268,6 +395,39 @@ components:
       in: cookie
       name: session
   schemas:
+    UpdatePhoneRequest:
+      type: object
+      additionalProperties: false
+      required: [phone]
+      properties:
+        phone:
+          type: string
+          pattern: "^3[0-9]{9}$"
+    UpdateEmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    AccountProfile:
+      type: object
+      additionalProperties: false
+      required: [full_name, phone, national_id, email]
+      properties:
+        full_name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        national_id:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
     Money:
       type: string
       description: Monto en COP como cadena decimal con exactamente dos decimales.
@@ -353,6 +513,51 @@ components:
         password:
           type: string
           minLength: 8
+    RegisterAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [full_name, phone, national_id, email, password]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          pattern: "^[^0-9_]+$"
+        phone:
+          type: string
+          pattern: "^3[0-9]{9}$"
+        national_id:
+          type: string
+          minLength: 5
+          maxLength: 20
+          pattern: "^[A-Za-z0-9]+$"
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 8
+          pattern: "^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$"
+          writeOnly: true
+    RegisterAccountResponse:
+      type: object
+      additionalProperties: false
+      required: [account_id, wallet]
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          minimum: 1
+        wallet:
+          type: object
+          additionalProperties: false
+          required: [balance]
+          properties:
+            balance:
+              type: string
+              enum: ["0.00"]
     Problem:
       type: object
       required: [type, title, status, instance, code]

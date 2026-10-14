@@ -2,6 +2,8 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "../features/auth/LoginPage";
+import { ProfilePage } from "../features/accounts/ProfilePage";
+import { RegisterPage } from "../features/accounts/RegisterPage";
 import { MovementsPage } from "../features/movements/MovementsPage";
 import { RechargePage } from "../features/wallet/RechargePage";
 import { AppShell } from "./AppShell";
@@ -17,9 +19,10 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/recargar" element={<RechargePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<RegisterPage />} />
           <Route path="/transferir" element={<ComingSoonPage title="Transferir" story="HU-06" />} />
           <Route path="/movimientos" element={<MovementsPage />} />
-          <Route path="/perfil" element={<ComingSoonPage title="Perfil" story="HU-10" />} />
+          <Route path="/perfil" element={<ProfilePage />} />
         </Routes>
       </AppShell>
     </IonReactRouter>
