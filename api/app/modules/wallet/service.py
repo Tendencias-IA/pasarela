@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -15,6 +16,7 @@ from app.common.idempotency import IdempotencyContext
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.common.money import RECHARGE_MAX, RECHARGE_MIN, to_json
 from app.extensions import transaction
+from app.modules.accounts import service as accounts_service
 from app.modules.wallet.repository import WalletRepository, default_repository
 
 log = logging.getLogger("app.wallet")
@@ -76,6 +78,31 @@ def get_wallet_id(user_id: int, repo: WalletRepository = default_repository) -> 
     """Id de la billetera del usuario, o None si no tiene (sin abrir transacción propia)."""
     wallet = repo.get_wallet_by_user(user_id)
     return None if wallet is None else wallet.id
+
+
+@dataclass(frozen=True)
+class WalletOwner:
+    """Titular de una billetera, para que otros módulos enmascaren la contraparte (HU-09 CA-3)."""
+
+    wallet_id: int
+    user_id: int
+    phone: str
+    full_name: str | None
+
+
+def get_wallet_owners(
+    wallet_ids: Iterable[int], repo: WalletRepository = default_repository
+) -> dict[int, WalletOwner]:
+    """Billetera → titular; ids inexistentes se omiten. Usa accounts_service, nunca sus tablas."""
+    wallets = repo.get_wallets_by_ids(wallet_ids)
+    users = accounts_service.get_users_by_ids(w.user_id for w in wallets)
+    return {
+        w.id: WalletOwner(
+            wallet_id=w.id, user_id=w.user_id, phone=user.phone, full_name=user.full_name
+        )
+        for w in wallets
+        if (user := users.get(w.user_id)) is not None
+    }
 
 
 def create_wallet(user_id: int, repo: WalletRepository = default_repository) -> int:

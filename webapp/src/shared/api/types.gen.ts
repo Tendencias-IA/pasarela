@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial paginado de movimientos de la billetera del usuario autenticado (HU-09) */
+        get: operations["listMovements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -82,6 +99,43 @@ export interface components {
             balance_after: components["schemas"]["Money"];
             /** Format: date-time */
             created_at: string;
+        };
+        /** @description Otro participante de una transferencia, ya enmascarado en el servidor (RNF-06). */
+        Counterparty: {
+            /**
+             * @description Iniciales con asteriscos ("Mar** G****"); null mientras HU-01 no registre el nombre.
+             * @example Mar** G****
+             */
+            name_masked: string | null;
+            /** @example ***4567 */
+            phone_masked: string;
+        };
+        MovementOut: {
+            /** Format: int64 */
+            id: number;
+            /**
+             * @description Punto de vista de la billetera del usuario autenticado.
+             * @enum {string}
+             */
+            direction: "recarga" | "enviada" | "recibida";
+            /** @enum {string} */
+            type: "recarga" | "transferencia";
+            /** @enum {string} */
+            status: "exitosa" | "rechazada";
+            amount: components["schemas"]["Money"];
+            /** Format: date-time */
+            created_at: string;
+            /** @description Código del motivo cuando status = rechazada. */
+            rejection_reason: string | null;
+            /** @description Solo en transferencias; null en recargas. */
+            counterparty: components["schemas"]["Counterparty"] | null;
+        };
+        MovementsPageOut: {
+            items: components["schemas"]["MovementOut"][];
+            page: number;
+            /** @enum {integer} */
+            page_size: 20;
+            total: number;
         };
         LoginIn: {
             phone: string;
@@ -175,6 +229,48 @@ export interface operations {
                 };
             };
             /** @description Monto inválido en formato (code `validation`, con `errors[]`), fuera de rango (code `amount_out_of_range`) o misma Idempotency-Key con cuerpo distinto (code `idempotency_key_mismatch`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMovements: {
+        parameters: {
+            query?: {
+                /** @description Número de página desde 1. Página inexistente responde items vacío con el total real. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
+            200: {
+                headers: {
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementsPageOut"];
+                };
+            };
+            /** @description Sin sesión válida (code `invalid_session`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description page no es un entero desde 1 (code `validation`, errors[].field = page) */
             422: {
                 headers: {
                     [name: string]: unknown;

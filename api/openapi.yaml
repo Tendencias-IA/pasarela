@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Pasarela API
   description: >
@@ -100,6 +100,67 @@ paths:
                     code: amount_out_of_range
                     request_id: 7f1c9b2e
                     errors: [{ field: amount, message: "Debe estar entre 5000.00 y 5000000.00" }]
+  /api/v1/movements:
+    get:
+      operationId: listMovements
+      summary: Historial paginado de movimientos de la billetera del usuario autenticado (HU-09)
+      tags: [movements]
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Número de página desde 1. Página inexistente responde items vacío con el total real.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC)
+          headers:
+            X-Request-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovementsPageOut"
+              examples:
+                con_movimientos:
+                  value:
+                    items:
+                      - id: 8813
+                        direction: enviada
+                        type: transferencia
+                        status: exitosa
+                        amount: "150000.00"
+                        created_at: "2026-10-14T21:42:10Z"
+                        rejection_reason: null
+                        counterparty: { name_masked: "Mar** G****", phone_masked: "***4567" }
+                      - id: 8812
+                        direction: recarga
+                        type: recarga
+                        status: rechazada
+                        amount: "4999.00"
+                        created_at: "2026-10-14T21:40:00Z"
+                        rejection_reason: amount_out_of_range
+                        counterparty: null
+                    page: 1
+                    page_size: 20
+                    total: 2
+                vacio:
+                  value: { items: [], page: 1, page_size: 20, total: 0 }
+        "401":
+          description: Sin sesión válida (code `invalid_session`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: page no es un entero desde 1 (code `validation`, errors[].field = page)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
   /health:
     get:
       summary: Estado del servicio, sin sesión
@@ -202,6 +263,51 @@ components:
         amount: { $ref: "#/components/schemas/Money" }
         balance_after: { $ref: "#/components/schemas/Money" }
         created_at: { type: string, format: date-time }
+    Counterparty:
+      type: object
+      description: Otro participante de una transferencia, ya enmascarado en el servidor (RNF-06).
+      required: [name_masked, phone_masked]
+      properties:
+        name_masked:
+          type: [string, "null"]
+          description: Iniciales con asteriscos ("Mar** G****"); null mientras HU-01 no registre el nombre.
+          example: "Mar** G****"
+        phone_masked:
+          type: string
+          pattern: "^\\*{3}\\d{0,4}$"
+          example: "***4567"
+    MovementOut:
+      type: object
+      required: [id, direction, type, status, amount, created_at, rejection_reason, counterparty]
+      properties:
+        id: { type: integer, format: int64 }
+        direction:
+          type: string
+          enum: [recarga, enviada, recibida]
+          description: Punto de vista de la billetera del usuario autenticado.
+        type: { type: string, enum: [recarga, transferencia] }
+        status: { type: string, enum: [exitosa, rechazada] }
+        amount: { $ref: "#/components/schemas/Money" }
+        created_at: { type: string, format: date-time }
+        rejection_reason:
+          type: [string, "null"]
+          description: Código del motivo cuando status = rechazada.
+        counterparty:
+          oneOf:
+            - $ref: "#/components/schemas/Counterparty"
+            - type: "null"
+          description: Solo en transferencias; null en recargas.
+    MovementsPageOut:
+      type: object
+      required: [items, page, page_size, total]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items: { $ref: "#/components/schemas/MovementOut" }
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, enum: [20] }
+        total: { type: integer, minimum: 0 }
     LoginIn:
       type: object
       required: [phone, password]

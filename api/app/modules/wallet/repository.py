@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Protocol
@@ -38,6 +39,8 @@ class WalletRepository(Protocol):
 
     def lock_wallet_for_user(self, user_id: int) -> WalletLike | None: ...
 
+    def get_wallets_by_ids(self, wallet_ids: Iterable[int]) -> Sequence[WalletLike]: ...
+
     def add_transaction(
         self,
         *,
@@ -65,6 +68,12 @@ class SqlWalletRepository:
         db.session.add(wallet)
         db.session.flush()
         return wallet
+
+    def get_wallets_by_ids(self, wallet_ids: Iterable[int]) -> list[Wallet]:
+        ids = list(wallet_ids)
+        if not ids:
+            return []
+        return list(db.session.execute(select(Wallet).where(Wallet.id.in_(ids))).scalars())
 
     def lock_wallet_for_user(self, user_id: int) -> Wallet | None:
         # SELECT ... FOR UPDATE: serializa recargas y transferencias sobre la misma

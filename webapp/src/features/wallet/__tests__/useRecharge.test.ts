@@ -1,9 +1,11 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
 import { http, HttpResponse, delay } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
 import { setSessionExpiredHandler } from "../../../shared/api/client";
+import { renderHookWithProviders as renderHook } from "../../../test/render";
 import { server } from "../../../test/server";
+import { useMovements } from "../../movements/useMovements";
 import { FORMAT_MESSAGE, RANGE_MESSAGE, useRecharge } from "../useRecharge";
 
 const URL = "/api/v1/wallet/recharges";
@@ -233,5 +235,30 @@ describe("useRecharge (HU-08)", () => {
 
     expect(result.current.amount).toBe("50000");
     expect(keys[0]).not.toBe(keys[1]);
+  });
+
+  it("invalida la query de movimientos tras una recarga exitosa (webapp.md, SC-007)", async () => {
+    let movementsRequests = 0;
+    server.use(
+      http.post(URL, () => okResponse("50000.00", "50000.00")),
+      http.get("/api/v1/movements", () => {
+        movementsRequests += 1;
+        return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 });
+      }),
+    );
+    const { result } = renderHook(() => ({ recharge: useRecharge(), movements: useMovements(1) }));
+    await waitFor(() => {
+      expect(result.current.movements.data).toBeDefined();
+    });
+    expect(movementsRequests).toBe(1);
+
+    act(() => {
+      result.current.recharge.setAmount("50000");
+    });
+    await act(() => result.current.recharge.submit());
+
+    await waitFor(() => {
+      expect(movementsRequests).toBe(2);
+    });
   });
 });

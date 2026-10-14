@@ -62,9 +62,12 @@ export function HomePage() {
           {state.kind === "error" && (
             <p role="alert">No se pudo consultar la API: {state.message}</p>
           )}
-          <IonButton routerLink="/recargar" style={{ marginTop: 12 }}>
-            Recargar saldo
-          </IonButton>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
+            <IonButton routerLink="/recargar">Recargar saldo</IonButton>
+            <IonButton routerLink="/movimientos" fill="outline">
+              Ver movimientos
+            </IonButton>
+          </div>
         </section>
       </IonContent>
     </IonPage>

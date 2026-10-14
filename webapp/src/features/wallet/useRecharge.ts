@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 
 import { ApiError } from "../../shared/api/client";
@@ -8,6 +9,7 @@ import {
   isWithinRange,
   parseAmountInput,
 } from "../../shared/money";
+import { MOVEMENTS_QUERY_KEY } from "../movements/useMovements";
 import { postRecharge, type RechargeOut } from "./api";
 
 export const RANGE_MESSAGE = `El monto debe estar entre ${formatCOP(RECHARGE_MIN)} y ${formatCOP(RECHARGE_MAX)} COP.`;
@@ -27,6 +29,7 @@ export function useRecharge() {
   const [amount, setAmountRaw] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [state, setState] = useState<RechargeState>({ kind: "idle" });
+  const queryClient = useQueryClient();
   const keyRef = useRef<string>(crypto.randomUUID());
   // Guarda síncrona: `state` es una captura del render y dos llamadas en el mismo tick
   // (Enter + clic) pasarían ambas antes de que React vuelva a renderizar.
@@ -55,6 +58,8 @@ export function useRecharge() {
     try {
       const result = await postRecharge(canonical, keyRef.current);
       setState({ kind: "success", result });
+      // webapp.md: el historial (HU-09) debe reflejar la recarga en su siguiente consulta.
+      void queryClient.invalidateQueries({ queryKey: MOVEMENTS_QUERY_KEY });
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         const byField = error.messagesByField();
@@ -66,7 +71,7 @@ export function useRecharge() {
     } finally {
       inFlightRef.current = false;
     }
-  }, [amount]);
+  }, [amount, queryClient]);
 
   const reset = useCallback(() => {
     setAmountRaw("");
