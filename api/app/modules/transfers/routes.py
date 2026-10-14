@@ -5,10 +5,10 @@ from __future__ import annotations
 from flask import Blueprint, Response, g, jsonify, request
 
 from app.common.auth import current_user_id, login_required
-from app.common.idempotency import find_existing, idempotent, replay_response
+from app.common.idempotency import idempotent, replay_lost_race
+from app.common.idempotency_store import DuplicateIdempotencyKeyError
 from app.modules.transfers import service
 from app.modules.transfers.schemas import TransferIn, TransferOut, TransferPreviewOut
-from app.modules.wallet.service import DuplicateIdempotencyKeyError
 
 bp = Blueprint("transfers", __name__)
 
@@ -37,10 +37,6 @@ def create_transfer() -> Response | tuple[Response, int]:
             instance=request.path,
             request_id=getattr(g, "request_id", None),
         )
-    except DuplicateIdempotencyKeyError:
-        # Otra petición con la misma clave ganó la carrera: se reproduce su respuesta.
-        stored = find_existing(user_id, g.idempotency.key)
-        if stored is None:
-            raise
-        return replay_response(stored)
+    except DuplicateIdempotencyKeyError as error:
+        return replay_lost_race(user_id, g.idempotency.key, error)
     return jsonify(TransferOut.from_result(result).model_dump()), 201

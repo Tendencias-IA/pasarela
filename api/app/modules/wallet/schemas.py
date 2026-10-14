@@ -5,59 +5,27 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    field_validator,
-)
-from pydantic import (
-    ValidationError as PydanticValidationError,
-)
-from pydantic_core import ErrorDetails
+from pydantic import BaseModel, field_validator
 
-from app.common.errors import ValidationError
-from app.common.money import parse_amount, to_json
+from app.common.money import AMOUNT_FORMAT_MESSAGE, parse_amount, to_json
+from app.common.schemas import StrictInput
 from app.modules.wallet.service import RechargeResult, WalletBalance
 
 
-class RechargeIn(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
-
+class RechargeIn(StrictInput):
     amount: str
 
-    @field_validator("amount")
+    @field_validator("amount", mode="before")
     @classmethod
-    def _amount_is_decimal_string(cls, value: str) -> str:
+    def _amount_is_decimal_string(cls, value: Any) -> str:
+        if not isinstance(value, str):
+            raise ValueError(AMOUNT_FORMAT_MESSAGE)
         parse_amount(value)
         return value
 
     @property
     def amount_decimal(self) -> Decimal:
         return parse_amount(self.amount)
-
-    @classmethod
-    def parse(cls, payload: Any) -> RechargeIn:
-        """Convierte errores de Pydantic al formato RFC 9457 con `errors[]` por campo."""
-        try:
-            return cls.model_validate(payload if payload is not None else {})
-        except PydanticValidationError as exc:
-            errors = [
-                {"field": ".".join(str(p) for p in e["loc"]) or "body", "message": _message(e)}
-                for e in exc.errors()
-            ]
-            raise ValidationError("Revisa los campos indicados.", errors=errors) from None
-
-
-def _message(error: ErrorDetails) -> str:
-    ctx = error.get("ctx") or {}
-    raw = ctx.get("error")
-    if isinstance(raw, ValueError):
-        return str(raw)
-    if error.get("type") == "extra_forbidden":
-        return "Campo no permitido."
-    if error.get("type", "").endswith("missing"):
-        return "Campo obligatorio."
-    return "El monto debe ser un número positivo con hasta dos decimales."
 
 
 class RechargeOut(BaseModel):
