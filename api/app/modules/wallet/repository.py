@@ -39,6 +39,8 @@ class WalletRepository(Protocol):
 
     def lock_wallet_for_user(self, user_id: int) -> WalletLike | None: ...
 
+    def lock_wallets(self, wallet_ids: Iterable[int]) -> Sequence[WalletLike]: ...
+
     def get_wallets_by_ids(self, wallet_ids: Iterable[int]) -> Sequence[WalletLike]: ...
 
     def add_transaction(
@@ -81,6 +83,13 @@ class SqlWalletRepository:
         return db.session.execute(
             select(Wallet).where(Wallet.user_id == user_id).with_for_update()
         ).scalar_one_or_none()
+
+    def lock_wallets(self, wallet_ids: Iterable[int]) -> list[Wallet]:
+        # Orden ascendente de id: dos transferencias cruzadas piden los bloqueos en el mismo
+        # orden y no pueden dar deadlock (architecture.md, RNF-04.2).
+        ids = sorted(set(wallet_ids))
+        statement = select(Wallet).where(Wallet.id.in_(ids)).order_by(Wallet.id).with_for_update()
+        return list(db.session.execute(statement).scalars())
 
     def add_transaction(
         self,

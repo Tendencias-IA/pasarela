@@ -19,6 +19,7 @@ class FakeWalletRepository:
         self.transactions: list[SimpleNamespace] = []
         self.keys: list[dict[str, Any]] = []
         self.locked: list[int] = []
+        self.locked_wallet_ids: list[list[int]] = []
         self.units_of_work: list[str] = []
         self.fail_on_key = False
 
@@ -37,6 +38,11 @@ class FakeWalletRepository:
     def lock_wallet_for_user(self, user_id: int) -> SimpleNamespace | None:
         self.locked.append(user_id)
         return self.wallets.get(user_id)
+
+    def lock_wallets(self, wallet_ids: Iterable[int]) -> list[SimpleNamespace]:
+        ordered = sorted(set(wallet_ids))
+        self.locked_wallet_ids.append(ordered)
+        return [w for i in ordered for w in self.wallets.values() if w.id == i]
 
     def add_transaction(
         self,
