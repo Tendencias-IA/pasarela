@@ -5,9 +5,10 @@ Contrato fijo en .claude/rules/api-design.md: éxito es 204 + cookie, sin cuerpo
 
 from __future__ import annotations
 
-from flask import Blueprint, Response, current_app, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from flask_limiter.util import get_remote_address
 
+from app.common.auth import SESSION_COOKIE_NAME, login_required
 from app.extensions import limiter
 from app.modules.auth import service
 from app.modules.auth.schemas import LoginIn
@@ -37,3 +38,23 @@ def login() -> Response:
         max_age=int(current_app.config["SESSION_IDLE"].total_seconds()),
     )
     return response
+
+
+@bp.post("/logout")
+@login_required
+def logout() -> Response:
+    service.logout(request.cookies.get(SESSION_COOKIE_NAME))
+    response = current_app.make_response(("", 204))
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        httponly=True,
+        samesite="Lax",
+        secure=current_app.config["SESSION_COOKIE_SECURE"],
+    )
+    return response
+
+
+@bp.get("/session")
+@login_required
+def session_status() -> Response:
+    return jsonify(expires_at=service.session_expiry(request.cookies.get(SESSION_COOKIE_NAME)))

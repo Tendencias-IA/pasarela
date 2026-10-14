@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.engine import CursorResult
 
 from app.extensions import db
 from app.modules.auth.models import Session
@@ -20,3 +22,16 @@ def get_by_token_hash(token_hash: str) -> Session | None:
     return db.session.execute(
         select(Session).where(Session.token_hash == token_hash)
     ).scalar_one_or_none()
+
+
+def revoke_session(session_id: int, now: datetime) -> bool:
+    """HU-03 CA-1: escritura condicional, sin tocar otras sesiones."""
+    result = cast(
+        CursorResult[Any],
+        db.session.execute(
+            update(Session)
+            .where(Session.id == session_id, Session.revoked_at.is_(None))
+            .values(revoked_at=now)
+        ),
+    )
+    return bool(result.rowcount == 1)
