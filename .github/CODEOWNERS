@@ -1,0 +1,12 @@
+# Revisores por defecto. Toda ruta requiere al menos una aprobación de un propietario.
+*                               @havo-ao
+
+# Reglas, constitución y decisiones de arquitectura: cambios revisados por el responsable de SDD.
+/.specify/                      @havo-ao
+/.claude/                       @havo-ao
+/AGENTS.md                      @havo-ao
+/CLAUDE.md                      @havo-ao
+/docs/adr/                      @havo-ao
+/docs/sdd-workflow.md           @havo-ao
+/.github/                       @havo-ao
+/sonar-project.properties       @havo-ao
