@@ -59,7 +59,7 @@ seguir. No dejes que la IA "asuma".
 ## Paso 3. Planificar: `/speckit-plan`
 
 ```text
-/speckit-plan Implementar en el módulo transfers (backend) y la feature transfers (frontend)
+/speckit-plan Implementar en el módulo transfers (`api/`) y la feature transfers (`webapp/`)
 siguiendo .claude/rules/architecture.md. Preparar no escribe nada en BD. Reutilizar
 wallet.service para leer saldo y accounts.service para buscar destinatario por teléfono.
 ```
@@ -100,7 +100,7 @@ La IA ejecuta las tareas en orden. Tu trabajo es revisar, no mirar:
 
 ```bash
 cd api && ruff format . && ruff check . && mypy app && pytest
-cd ../frontend && npm run lint && npm run typecheck && npm run test && npm run e2e
+cd ../webapp && npm run lint && npm run typecheck && npm run test && npm run e2e
 git log --oneline main..HEAD
 ```
 
@@ -108,7 +108,7 @@ git log --oneline main..HEAD
   móvil.
 - `git push -u origin feat/PPA-6-preparar-transferencia` y abre el PR con el título
   `feat(PPA-6): preparar transferencia con validación y resumen enmascarado`. Completa la
-  plantilla con honestidad; el checklist es un contrato con quien revisa.
+  plantilla con honestidad: resumen, ticket y spec, cambios y cómo probar.
 - Pide revisión. Responde cada comentario con el commit que lo resuelve. Tras el merge
   (squash), borra la rama y pasa el ticket a "Listo" con el enlace al PR.
 

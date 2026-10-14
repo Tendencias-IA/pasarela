@@ -24,9 +24,9 @@ su `exp` aunque el usuario haya cerrado sesión.
   como revocada.
 - `POST /auth/logout` marca `revoked_at` y borra la cookie. Repetir una petición antigua
   con la misma cookie responde `401`.
-- El frontend mantiene un temporizador de inactividad solo para avisar y redirigir al
+- La webapp mantiene un temporizador de inactividad solo para avisar y redirigir al
   login; la decisión siempre es del servidor.
-- Como el frontend se sirve desde el mismo origen que la API (o detrás del mismo proxy),
+- Como la webapp se sirve desde el mismo origen que la API (o detrás del mismo proxy),
   `SameSite=Lax` mitiga CSRF; además, todas las mutaciones requieren cabecera
   `X-Requested-With: fetch`, que un formulario cross-site no puede enviar.
 

@@ -14,14 +14,15 @@ repositorio, modelos y pruebas viven juntos. Nunca se organiza por capa técnica
 | `accounts` | Registro, consulta y edición de perfil | HU-01, HU-11, HU-12, HU-13 | `users` |
 | `auth` | Inicio y cierre de sesión, expiración por inactividad | HU-02, HU-03, HU-04 | `sessions` |
 | `wallet` | Saldo y recargas | HU-05, HU-08 | `wallets` |
-| `transfers` | Preparar y confirmar transferencias | HU-06, HU-07 | `transactions` (escribe) |
-| `movements` | Historial y filtros | HU-09, HU-10 | `transactions` (solo lee) |
+| `transfers` | Preparar y confirmar transferencias | HU-06, HU-07 | ninguna propia |
+| `movements` | Historial y filtros | HU-09, HU-10 | ninguna propia |
 
-`transactions` es la única tabla compartida: la escriben `wallet` (recargas) y
-`transfers`; `movements` solo la lee a través de `movements.repository`. Cualquier otra
-tabla pertenece a un solo módulo.
+`transactions` es la única tabla compartida y su modelo vive en
+`app/common/models/transaction.py` (ADR-0006): la escriben `wallet` (recargas) y
+`transfers` desde sus repositorios, y `movements` solo la lee. `idempotency_keys` también
+es común (`app/common/idempotency.py`). Cualquier otra tabla pertenece a un solo módulo.
 
-## Estructura de carpetas del backend
+## Estructura de carpetas de la API
 
 ```text
 api/
@@ -30,6 +31,8 @@ api/
 │   ├── config.py              # clases Config por ambiente, valores desde variables de entorno
 │   ├── extensions.py          # db (SQLAlchemy), migrate (Alembic), limiter
 │   ├── common/                # transversal, sin reglas de negocio de un módulo
+│   │   ├── models/
+│   │   │   └── transaction.py # modelo compartido `transactions` (ADR-0006)
 │   │   ├── errors.py          # AppError, handlers RFC 9457
 │   │   ├── money.py           # parse_amount, Decimal helpers, serialización
 │   │   ├── masking.py         # mask_phone, mask_name
@@ -58,7 +61,7 @@ api/
 └── pyproject.toml
 ```
 
-Frontend espejo por feature en `webapp/src/features/<modulo>/` (ver `frontend.md`).
+Webapp espejo por feature en `webapp/src/features/<modulo>/` (ver `webapp.md`).
 
 ## Capas dentro de un módulo
 
@@ -105,14 +108,19 @@ Toda escritura de saldo sigue este orden, sin excepción:
 
 ```python
 # Correcto
-with db.session.begin():
-    wallets = repository.lock_wallets([sender_id, receiver_id])  # SELECT ... FOR UPDATE ORDER BY id
-    sender, receiver = wallets[sender_id], wallets[receiver_id]
-    if sender.balance < amount:
-        raise InsufficientBalance()          # rollback automático, nada persistido
-    sender.balance -= amount
-    receiver.balance += amount
-    repository.add_transaction(...status="exitosa")
+try:
+    with db.session.begin():
+        wallets = repository.lock_wallets([sender_id, receiver_id])  # SELECT ... FOR UPDATE ORDER BY id
+        sender, receiver = wallets[sender_id], wallets[receiver_id]
+        if sender.balance < amount:
+            raise InsufficientBalance()      # rollback: ningún saldo cambia
+        sender.balance -= amount
+        receiver.balance += amount
+        repository.add_transaction(..., status="exitosa")
+except AppError as exc:
+    with db.session.begin():                 # segunda transacción, ya sin bloqueos
+        repository.add_transaction(..., status="rechazada", rejection_reason=exc.code)
+    raise
 ```
 
 ```python
@@ -130,24 +138,28 @@ transferencias simultáneas no gasten el mismo saldo (RNF-04.2, HU-07 CA-9).
 
 `POST /transfers` y `POST /wallet/recharges` exigen cabecera `Idempotency-Key` (UUID v4
 generado por el cliente). Se persiste en `idempotency_keys(user_id, key, request_hash,
-status_code, response_body)` dentro de la misma transacción que la operación. Reintento
-con la misma clave y el mismo cuerpo devuelve la respuesta guardada sin ejecutar nada;
-misma clave con cuerpo distinto responde `422`. Razón: un doble clic o un reintento de
-red no puede acreditar dos veces (RNF-04.4).
+status_code, response_body)`. En una operación exitosa, la fila se escribe dentro de la
+misma transacción que el movimiento de saldo; en una rechazada, en la segunda
+transacción que registra el movimiento `rechazada` (ver arriba). Reintento con la misma
+clave y el mismo cuerpo devuelve la respuesta guardada sin ejecutar nada; misma clave
+con cuerpo distinto responde `422`. Razón: un doble clic o un reintento de red no puede
+acreditar dos veces (RNF-04.4).
 
 ### Estados de una operación
 
-Una `transaction` nace y muere en la misma transacción de BD con `status` en
-`{"exitosa", "rechazada"}`. No existen estados `pendiente` ni `en_proceso`: "preparar
-transferencia" (HU-06) es una consulta pura que no escribe nada. Una operación
-`rechazada` se registra solo si llegó a validaciones de negocio con sesión válida; los
-errores de formato no crean registros.
+Una `transaction` se inserta ya con su estado final, `exitosa` o `rechazada`, y nunca
+cambia. No existen estados `pendiente` ni `en_proceso`: "preparar transferencia" (HU-06)
+es una consulta pura que no escribe nada. Una `exitosa` se inserta en la misma
+transacción de BD que mueve los saldos; una `rechazada` se inserta en una transacción
+posterior, después del rollback, y solo si la solicitud llegó a validaciones de negocio
+con sesión válida (saldo, destinatario, límites). Los errores de formato (`422
+validation`) y de autenticación no crean registros.
 
 ### Enmascaramiento
 
 Los datos de un tercero (destinatario, emisor) salen del servidor ya enmascarados vía
 `app/common/masking.py`: nombre con iniciales (`"Mar** G****"`) y teléfono con últimos
-cuatro dígitos (`"***4567"`). El frontend nunca recibe el dato completo para ocultarlo
+cuatro dígitos (`"***4567"`). La webapp nunca recibe el dato completo para ocultarlo
 él. Razón: RNF-06 y HU-06 CA-7, y porque lo que llega al navegador es público.
 
 ## Modelo de datos de referencia
@@ -168,9 +180,8 @@ El historial (HU-09) deriva "enviada" o "recibida" según si la billetera del us
 - No crear `core/`, `domain/`, `ports/`, `adapters/` ni interfaces abstractas de
   repositorio. ADR-0001 explica por qué se rechazó hexagonal.
 - No añadir colas, eventos, caché ni servicios externos. No hay PSP real (alcance).
-- No compartir modelos SQLAlchemy entre módulos: `transactions` se expone a `movements`
-  mediante consultas de solo lectura en `movements/repository.py`, no importando el modelo
-  de `transfers`. Si hace falta el mismo modelo en dos módulos, va en `app/common/models/`
-  con un ADR.
-- No poner reglas de negocio en el frontend como única validación: el frontend valida para
-  dar feedback inmediato, el backend valida para decidir (RNF-01.4).
+- No importar `models.py` de otro módulo. Un modelo que necesitan dos módulos vive en
+  `app/common/models/` con un ADR; hoy solo `transactions` (ADR-0006). Cada módulo lo
+  consulta desde su propio `repository.py`.
+- No poner reglas de negocio en la webapp como única validación: la webapp valida para
+  dar feedback inmediato, la API valida para decidir (RNF-01.4).

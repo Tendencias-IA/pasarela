@@ -14,7 +14,7 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 | --- | --- |
 | `AGENTS.md` / `CLAUDE.md` | Punto de entrada para cualquier herramienta de IA. Léelo primero. |
 | `.specify/memory/constitution.md` | Constitución del proyecto: principios y gates innegociables. |
-| `.claude/rules/` | Reglas por tema: arquitectura, API, backend, frontend, testing, seguridad, observabilidad, Git, quality gates. |
+| `.claude/rules/` | Reglas por tema: arquitectura, diseño de API, api, webapp, testing, seguridad, observabilidad, Git, quality gates. |
 | `.claude/skills/speckit-*` | Comandos de Spec Kit (`/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement`). |
 | `docs/sdd-workflow.md` | Guía paso a paso para tomar un ticket de Jira y ejecutar el ciclo SDD. |
 | `docs/adr/` | Decisiones de arquitectura (ADR). |
@@ -26,8 +26,8 @@ usuario pasa por `spec → plan → tasks → implement` antes de escribir códi
 
 ## Stack
 
-- Backend: Python 3.12, Flask 3, SQLAlchemy 2, Alembic, MySQL 8.
-- Frontend: React 18, Vite, TypeScript, Vitest, Playwright.
+- `api/`: Python 3.12, Flask 3, SQLAlchemy 2, Alembic, MySQL 8.
+- `webapp/`: React 18, Vite, TypeScript, Vitest, Playwright.
 - Calidad: pytest con cobertura ≥ 90 %, Ruff, mypy, ESLint, Prettier, SonarQube.
 
 ## Gestión

@@ -9,7 +9,7 @@ paths:
 # Diseño de la API HTTP
 
 El contrato es `api/openapi.yaml`. Se edita a mano en la misma tarea que el endpoint
-y se verifica con pruebas de contrato (ver `testing.md`). El frontend genera sus tipos
+y se verifica con pruebas de contrato (ver `testing.md`). La webapp genera sus tipos
 desde ese archivo con `openapi-typescript`; nunca escribe tipos de respuesta a mano.
 
 ## Convenciones generales
@@ -17,7 +17,7 @@ desde ese archivo con `openapi-typescript`; nunca escribe tipos de respuesta a m
 - Base `/api/v1`. Un cambio incompatible crea `/api/v2`; no se rompe `v1` en silencio.
 - JSON en entrada y salida, `Content-Type: application/json`. Errores con
   `application/problem+json`.
-- Nombres de campos en `snake_case` en JSON (espejo de Python). El frontend adapta en
+- Nombres de campos en `snake_case` en JSON (espejo de Python). La webapp adapta en
   su capa `shared/api`.
 - Montos como cadena decimal con dos decimales (`"150000.00"`), ver ADR-0003. Fechas en
   ISO 8601 UTC (`2026-10-13T21:40:00Z`).
@@ -62,7 +62,7 @@ desde ese archivo con `openapi-typescript`; nunca escribe tipos de respuesta a m
 }
 ```
 
-- `code` es estable y en `snake_case`; el frontend decide mensajes y comportamiento por
+- `code` es estable y en `snake_case`; la webapp decide mensajes y comportamiento por
   `code`, nunca por `detail`.
 - `errors` solo aparece en `422 validation` y lista todos los campos inválidos a la vez
   (RNF-03.2), no solo el primero.
@@ -76,7 +76,7 @@ Solicitud:
 POST /api/v1/transfers HTTP/1.1
 Content-Type: application/json
 X-Requested-With: fetch
-Idempotency-Key: 6f1a2c3e-8b4d-4e5f-9a6b-7c8d9e0f1a2b
+Idempotency-Key: 00000000-0000-4000-8000-000000000001
 Cookie: session=...
 
 { "recipient_phone": "3001234567", "amount": "150000.00" }

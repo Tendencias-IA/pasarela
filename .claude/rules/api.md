@@ -3,7 +3,7 @@ paths:
   - "api/**"
 ---
 
-# Backend: Python 3.12 + Flask 3 + SQLAlchemy 2 + MySQL 8
+# API (`api/`): Python 3.12 + Flask 3 + SQLAlchemy 2 + MySQL 8
 
 Aplica a todo archivo bajo `api/`. La estructura de módulos está en `architecture.md`;
 aquí van las convenciones de código. Decisiones de stack en `docs/adr/0002`.
@@ -24,15 +24,22 @@ cd api && ruff format . && ruff check . && mypy app && pytest
 
 ## App factory y configuración
 
-- `create_app(config_name: str) -> Flask` en `app/__init__.py` registra extensiones,
-  blueprints y manejadores de error. Nunca se crea `Flask(__name__)` a nivel de módulo.
-  Razón: las pruebas necesitan construir una app por test con configuración distinta.
+- `create_app(config_name: str | None = None) -> Flask` en `app/__init__.py` registra
+  extensiones, blueprints y manejadores de error. Si `config_name` es `None`, lo toma de
+  la variable de entorno `APP_CONFIG` (por defecto `development`). Así la CLI de Flask
+  (`FLASK_APP=app flask db upgrade`) y gunicorn (`app:create_app()`) funcionan sin
+  argumentos, y las pruebas pasan el nombre explícito. Nunca se crea `Flask(__name__)` a
+  nivel de módulo. Razón: las pruebas necesitan construir una app por test con
+  configuración distinta.
 - La configuración se lee de variables de entorno en `app/config.py`
   (`DATABASE_URL`, `SECRET_KEY`, `SESSION_IDLE_MINUTES=5`, `LOG_LEVEL`). Sin valores por
   defecto para secretos: si falta `SECRET_KEY`, la app no arranca. Hay un
   `api/.env.example` con todas las claves y valores de ejemplo no sensibles.
-- Tres configs: `development`, `testing`, `production`. `testing` apunta a la base de
-  datos del contenedor de pruebas y desactiva el rate limit.
+- Cuatro configs en `app/config.py`: `development` (local, cookie sin `Secure`),
+  `testing` (pytest: `TESTING=True`, rate limit desactivado), `e2e` (igual que
+  `production` pero cookie sin `Secure` y rate limit desactivado, porque Playwright y
+  Locust usan `http://127.0.0.1`) y `production` (`Secure`, `DEBUG=False`). `FLASK_ENV`
+  no se usa: Flask 3 lo ignora.
 
 ## Rutas (Blueprints)
 
@@ -48,7 +55,7 @@ cd api && ruff format . && ruff check . && mypy app && pytest
 @idempotent
 def create_recharge() -> tuple[dict[str, Any], int]:
     payload = RechargeIn.model_validate(request.get_json())
-    result = service.recharge(current_user().id, payload.amount)
+    result = service.recharge(current_user().id, payload.amount)  # la clave la gestiona @idempotent
     return RechargeOut.from_domain(result).model_dump(), 201
 ```
 

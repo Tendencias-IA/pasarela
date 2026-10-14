@@ -12,8 +12,11 @@ ella sale producción. Ambientes: local y producción.
   con `main` a diario mediante `git rebase main` mientras es privada; con `git merge
   main` si alguien más la tiene.
 - Se borra tras el merge.
-- Nadie hace push directo a `main`; está protegida (PR obligatorio, 1 aprobación, CI
-  verde, historia lineal).
+- Nadie hace push directo a `main`. Todo cambio entra por PR con una aprobación y CI
+  verde. GitHub no permite proteger ramas en este repositorio privado con el plan
+  gratuito, así que la regla se cumple por disciplina del equipo y se revisa en cada PR
+  (`git log main` debe mostrar solo merges de PR). Si el repositorio se hace público, se
+  activa la protección de `main` con esos mismos requisitos.
 
 ## Commits
 
@@ -48,9 +51,10 @@ ella sale producción. Ambientes: local y producción.
 ## Pull request
 
 - Título igual que un commit: `type(PPA-n): descripción`. El CI lo valida.
-- Se usa la plantilla de `.github/PULL_REQUEST_TEMPLATE.md` completa. El cuerpo lleva el
-  razonamiento: qué cambia, por qué, qué se descartó, cómo se verificó, enlace a Jira y
-  a `specs/<NNN-ppa-n-slug>/`.
+- Se usa la plantilla de `.github/PULL_REQUEST_TEMPLATE.md`: resumen (qué y por qué),
+  ticket de Jira y carpeta `specs/<NNN-ppa-n-slug>/`, lista de cambios y cómo probar.
+  Corto y concreto; una alternativa descartada se menciona solo si el revisor la
+  preguntaría.
 - Tamaño: ≤ 400 líneas significativas. Una HU grande se divide en PRs por tarea de
   `tasks.md` (por ejemplo, migración y modelo primero, servicio y pruebas después,
   UI al final), cada uno útil por sí mismo.

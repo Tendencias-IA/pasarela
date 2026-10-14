@@ -6,9 +6,9 @@
 
 ## Contexto
 
-El equipo pidió un backend en Python con un framework sencillo y MySQL como base de
+El equipo pidió una API en Python con un framework sencillo y MySQL como base de
 datos. Se necesitan transacciones con bloqueo de filas (RNF-04.1, RNF-04.2), migraciones
-versionadas (RNF-05) y una API HTTP consumida por un frontend React.
+versionadas (RNF-05) y una API HTTP consumida por una webapp React.
 
 ## Decisión
 

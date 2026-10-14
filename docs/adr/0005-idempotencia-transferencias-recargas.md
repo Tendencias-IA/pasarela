@@ -22,11 +22,15 @@ navegador tras un timeout o una recarga de página pueden reenviar el mismo `POS
 - Flujo en `app/common/idempotency.py` (decorador `@idempotent`): si existe la clave
   con el mismo hash, se devuelve la respuesta guardada con cabecera
   `Idempotent-Replayed: true`; si existe con otro hash, `422`; si no existe, se ejecuta la
-  operación y se guarda la respuesta **en la misma transacción** que el movimiento de
-  saldo, para que no pueda quedar la operación sin la clave ni la clave sin la operación.
+  operación. En una operación exitosa la clave se guarda **en la misma transacción** que
+  el movimiento de saldo, para que no pueda quedar la operación sin la clave ni la clave
+  sin la operación.
+- Las respuestas de rechazo de negocio (`422` por saldo insuficiente, etc.) también se
+  guardan, para que el reintento reciba el mismo resultado. Como el rechazo hace rollback
+  de la transacción principal, la clave y el movimiento `rechazada` se escriben juntos en
+  una segunda transacción, después del rollback (ver `architecture.md`, "Operación
+  atómica con bloqueo").
 - Las claves caducan a las 24 horas; una limpieza perezosa borra las vencidas.
-- Las respuestas de rechazo (`422` por saldo insuficiente, etc.) también se guardan, para
-  que el reintento reciba el mismo resultado.
 
 ## Alternativas consideradas
 
@@ -37,7 +41,7 @@ navegador tras un timeout o una recarga de página pueden reenviar el mismo `POS
 
 ## Consecuencias
 
-- El frontend debe generar y conservar la clave mientras dura el flujo de confirmación.
+- La webapp debe generar y conservar la clave mientras dura el flujo de confirmación.
 - Las pruebas de HU-07 y HU-08 incluyen obligatoriamente: reintento con misma clave
   (una sola aplicación), misma clave con cuerpo distinto (`422`), y dos claves distintas
   en paralelo (ambas aplican o una se rechaza por saldo).

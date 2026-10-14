@@ -19,7 +19,7 @@ COP, con límites entre $100 y $5.000.000, sin saldo máximo.
   (balance >= 0)`.
 - JSON: los montos viajan como cadena (`"150000.00"`), nunca como número. Pydantic
   parsea la cadena a `Decimal` en entrada y la serializa de vuelta en salida.
-- Frontend: los montos se manejan como cadena y se formatean con `Intl.NumberFormat`
+- Webapp: los montos se manejan como cadena y se formatean con `Intl.NumberFormat`
   para `es-CO`; la aritmética en el navegador se limita a mostrar, nunca a decidir.
 
 ## Alternativas consideradas
@@ -34,4 +34,4 @@ COP, con límites entre $100 y $5.000.000, sin saldo máximo.
 
 - Toda prueba de montos compara `Decimal` con `Decimal`, no con literales numéricos.
 - Ruff y mypy se configuran para que `float` en `money.py`, `service.py` de `wallet` y
-  `transfers` sea un error de revisión (ver `.claude/rules/backend.md`).
+  `transfers` sea un error de revisión (ver `.claude/rules/api.md`).

@@ -112,7 +112,7 @@ Enmiendas: PR que modifica este archivo, con la justificación en el cuerpo del 
 aprobación de otra persona del equipo, y actualización de la versión según SemVer:
 MAJOR al eliminar o redefinir un principio, MINOR al añadir principio o sección, PATCH
 por aclaraciones. Todo PR de implementación verifica cumplimiento en el Constitution
-Check del `plan.md` y en el checklist del PR. Las desviaciones se documentan en la tabla
+Check del `plan.md` y en la revisión del PR. Las desviaciones se documentan en la tabla
 "Complexity Tracking" del plan con la alternativa más simple rechazada y el motivo.
 
 **Version**: 1.0.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-13

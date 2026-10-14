@@ -24,7 +24,8 @@ que el equipo adoptó. Decisiones de sesión en ADR-0004.
 ## Autorización y titularidad
 
 - Todo endpoint privado usa `@login_required`; la lista de rutas públicas es exactamente
-  `POST /accounts` y `POST /auth/login` (RNF-01.1, HU-02 CA-5).
+  `POST /accounts`, `POST /auth/login` y `GET /health` (RNF-01.1, HU-02 CA-5). `/health`
+  no expone datos ni configuración.
 - El id del usuario sale siempre de la sesión, nunca del cuerpo ni de la URL. No existen
   rutas `/users/{id}/wallet`: son `/wallet`, `/profile`, `/movements` del usuario
   autenticado (HU-05 CA-4, RNF-06.1).
@@ -42,7 +43,7 @@ que el equipo adoptó. Decisiones de sesión en ADR-0004.
 ## Privacidad y datos personales (RNF-06)
 
 - Los datos de terceros salen enmascarados desde el servidor con `app/common/masking.py`
-  (HU-06 CA-7, HU-09 CA-3). El frontend nunca recibe el dato completo.
+  (HU-06 CA-7, HU-09 CA-3). La webapp nunca recibe el dato completo.
 - Logs: nunca `password`, `password_hash`, cookie de sesión, `Idempotency-Key` completa
   ni teléfonos completos. `mask_phone` es obligatorio al loguear un teléfono; `national_id`
   no se loguea nunca (RNF-06.2, RNF-06.4).
@@ -65,17 +66,17 @@ que el equipo adoptó. Decisiones de sesión en ADR-0004.
 - Producción detrás de HTTPS. Cabeceras fijas en `create_app`: `Content-Security-Policy:
   default-src 'self'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy:
   strict-origin-when-cross-origin`, `X-Frame-Options: DENY`.
-- CORS: deshabilitado. Frontend y API se sirven desde el mismo origen (Vite proxy en
+- CORS: deshabilitado. Webapp y API se sirven desde el mismo origen (Vite proxy en
   local, mismo proxy en producción). Si alguna vez hiciera falta, lista blanca de origen
   exacto, nunca `*` con credenciales.
 
-## Checklist de seguridad para el PR
+## Qué revisa el revisor en un PR que toca seguridad
 
-- [ ] Rutas nuevas con `@login_required` salvo las dos públicas.
-- [ ] El id de usuario sale de la sesión, no de la petición.
-- [ ] Entrada validada por schema; sin SQL concatenado.
-- [ ] Respuestas y logs sin contraseñas, cookies, cédulas ni teléfonos completos ajenos.
-- [ ] Datos de terceros enmascarados en servidor.
-- [ ] Ningún secreto nuevo en el repo; `.env.example` actualizado si hay variable nueva.
-- [ ] Mutaciones exigen `X-Requested-With`; transferencias y recargas exigen
-      `Idempotency-Key`.
+- Rutas nuevas con `@login_required` salvo las dos públicas.
+- El id de usuario sale de la sesión, no de la petición.
+- Entrada validada por schema; sin SQL concatenado.
+- Respuestas y logs sin contraseñas, cookies, cédulas ni teléfonos completos ajenos.
+- Datos de terceros enmascarados en servidor.
+- Ningún secreto nuevo en el repo; `.env.example` actualizado si hay variable nueva.
+- Mutaciones exigen `X-Requested-With`; transferencias y recargas exigen
+  `Idempotency-Key`.

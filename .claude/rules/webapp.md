@@ -3,7 +3,7 @@ paths:
   - "webapp/**"
 ---
 
-# Frontend: React 18 + Vite + TypeScript
+# Webapp (`webapp/`): React 18 + Vite + TypeScript
 
 Aplica a todo archivo bajo `webapp/`. Cubre RNF-03 (usabilidad y accesibilidad) y la
 parte de cliente de RNF-01 y RNF-06.
@@ -27,7 +27,7 @@ cd webapp && npm run lint && npm run typecheck && npm run test && npm run e2e
 webapp/
 ├── src/
 │   ├── app/                 # router, providers, layout, temporizador de inactividad
-│   ├── features/            # espejo de los módulos del backend
+│   ├── features/            # espejo de los módulos de la API
 │   │   ├── accounts/        # RegisterPage, ProfilePage, hooks, api.ts, __tests__/
 │   │   ├── auth/            # LoginPage, useSession, api.ts
 │   │   ├── wallet/          # BalanceCard, RechargePage
@@ -46,7 +46,7 @@ webapp/
 ```
 
 - Una feature no importa componentes de otra feature; lo compartido va a `shared/`.
-  Razón: igual que en el backend, una HU se implementa en una carpeta.
+  Razón: igual que en la API, una HU se implementa en una carpeta.
 - Los tipos de la API se generan con `npm run api:types` desde `api/openapi.yaml` a
   `src/shared/api/types.gen.ts`; ese archivo no se edita a mano.
 
@@ -64,8 +64,8 @@ webapp/
 
 ## Formularios y validación
 
-- Validación de formato en el cliente para feedback inmediato (mismas reglas que el
-  backend: teléfono 10 dígitos, contraseña 8+ con letra y número, montos dentro de rango),
+- Validación de formato en el cliente para feedback inmediato (mismas reglas que la
+  API: teléfono 10 dígitos, contraseña 8+ con letra y número, montos dentro de rango),
   pero la decisión siempre es del servidor: el formulario muestra los `errors[]` del
   `422` campo por campo (RNF-03.2).
 - Campos obligatorios marcados visualmente y con `aria-required`. Cada error se asocia al
@@ -147,6 +147,16 @@ export class TransferPage {
   async confirm() { await this.page.getByRole("button", { name: "Confirmar" }).click(); }
 }
 ```
+
+## Dependencias
+
+Misma política que la API: añadir una dependencia requiere ADR corto y commit propio
+(`build(PPA-n): add <paquete>`), versiones fijadas en `package.json` sin `^`. Lista
+inicial permitida: `react`, `react-dom`, `react-router-dom`, `@tanstack/react-query`,
+`react-hook-form`; dev: `vite`, `typescript`, `vitest`, `@testing-library/react`,
+`@testing-library/user-event`, `jsdom`, `msw`, `@playwright/test`, `@axe-core/playwright`,
+`openapi-typescript`, `eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`,
+`typescript-eslint`, `prettier`.
 
 ## Qué no hacer
 

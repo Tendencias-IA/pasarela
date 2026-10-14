@@ -27,8 +27,8 @@ Fuente de verdad del negocio: `docs/referencia/requisitos-billetera-v1.0.md`
 
 ## Stack (no se cambia sin ADR)
 
-Backend `api/`: Python 3.12, Flask 3, SQLAlchemy 2, Alembic, MySQL 8, Pydantic 2,
-pytest. Frontend `webapp/`: React 18, Vite, TypeScript estricto, TanStack Query,
+`api/`: Python 3.12, Flask 3, SQLAlchemy 2, Alembic, MySQL 8, Pydantic 2,
+pytest. `webapp/`: React 18, Vite, TypeScript estricto, TanStack Query,
 Vitest, Playwright. Calidad: Ruff, mypy, ESLint, Prettier, SonarQube.
 
 ## Cómo se trabaja: Spec-Driven Development
@@ -45,9 +45,9 @@ Guía paso a paso con ejemplo: `docs/sdd-workflow.md`.
 ## Comandos
 
 ```bash
-# backend
+# api
 cd api && ruff format . && ruff check . && mypy app && pytest
-# frontend
+# webapp
 cd webapp && npm run lint && npm run typecheck && npm run test && npm run e2e
 # base de datos local
 docker compose up -d mysql && cd api && flask db upgrade
@@ -59,8 +59,8 @@ docker compose up -d mysql && cd api && flask db upgrade
 | --- | --- |
 | `.claude/rules/architecture.md` | vas a crear o mover código: módulos, capas, dinero, bloqueo, idempotencia, modelo de datos |
 | `.claude/rules/api-design.md` | tocas `routes.py`, `schemas.py`, `openapi.yaml` o el cliente HTTP del front |
-| `.claude/rules/backend.md` | escribes Python en `api/` |
-| `.claude/rules/frontend.md` | escribes TypeScript/React en `webapp/` o tests Playwright |
+| `.claude/rules/api.md` | escribes Python en `api/` |
+| `.claude/rules/webapp.md` | escribes TypeScript/React en `webapp/` o tests Playwright |
 | `.claude/rules/testing.md` | escribes o revisas pruebas de cualquier nivel |
 | `.claude/rules/security.md` | tocas autenticación, sesión, validación, logs o datos personales |
 | `.claude/rules/observability.md` | añades logs, métricas o manejo de errores |
@@ -79,7 +79,7 @@ docker compose up -d mysql && cd api && flask db upgrade
   feedback.
 - Datos de terceros enmascarados en el servidor. Nunca contraseñas, cookies, cédulas ni
   teléfonos completos en logs o errores.
-- Cobertura backend ≥ 90 %; un spec Playwright por HU; Sonar en verde.
+- Cobertura de la API ≥ 90 %; un spec Playwright por HU; Sonar en verde.
 - Un módulo solo importa `service.py` de otro módulo, nunca su repositorio o modelos.
 - Commits `type(PPA-n): descripción`; PR con plantilla; nada se pushea sin que el autor
   lo revise.
