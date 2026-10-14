@@ -20,6 +20,7 @@ from app import create_app
 from app.extensions import db
 from app.modules.accounts.models import User
 from app.modules.auth.models import Session
+from app.modules.wallet.models import Wallet
 
 os.environ.setdefault("SECRET_KEY", "clave-de-pruebas-no-secreta")
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
@@ -41,7 +42,11 @@ def client(app: Flask) -> FlaskClient:
 def mysql_database_url() -> Generator[str, None, None]:
     """MySQL real en contenedor para pruebas de integración (testing.md: nunca create_all())."""
     with MySqlContainer("mysql:8.0") as mysql:
-        url = mysql.get_connection_url().replace("mysql://", "mysql+pymysql://")
+        url = (
+            mysql.get_connection_url()
+            .replace("mysql+mysqldb://", "mysql+pymysql://")
+            .replace("mysql://", "mysql+pymysql://")
+        )
         os.environ["DATABASE_URL"] = url
         application = create_app("testing")
         with application.app_context():
@@ -77,5 +82,6 @@ def db_session(integration_app: Flask) -> Generator[SqlAlchemySession, None, Non
 
     db.session.rollback()
     db.session.query(Session).delete()
+    db.session.query(Wallet).delete()
     db.session.query(User).delete()
     db.session.commit()

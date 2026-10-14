@@ -10,6 +10,7 @@ from app.common import errors, health, security
 from app.common import logging as app_logging
 from app.config import get_config
 from app.extensions import db, limiter, migrate
+from app.modules.accounts.routes import blueprint as accounts_bp
 from app.modules.auth.routes import bp as auth_bp
 
 
@@ -27,6 +28,7 @@ def create_app(config_name: str | None = None) -> Flask:
     security.init_app(app)
 
     app.register_blueprint(health.bp)
+    app.register_blueprint(accounts_bp)
     app.register_blueprint(auth_bp)
     # Los módulos de negocio (wallet, transfers, movements) se registran aquí a medida
     # que se implementan sus historias, con prefijo /api/v1.

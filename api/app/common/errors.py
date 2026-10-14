@@ -33,6 +33,24 @@ class ValidationError(AppError):
     title = "Datos inválidos"
 
 
+class DuplicateIdentityError(AppError):
+    status = 409
+    code = "duplicate_identity"
+    title = "Cuenta ya registrada"
+
+    def __init__(self) -> None:
+        super().__init__("Ya existe una cuenta con alguno de esos datos.")
+
+
+class InvalidJsonError(AppError):
+    status = 400
+    code = "invalid_json"
+    title = "JSON inválido"
+
+    def __init__(self) -> None:
+        super().__init__("Envía un cuerpo JSON válido.")
+
+
 def problem(
     status: int, code: str, title: str, detail: str = "", errors: list[dict[str, str]] | None = None
 ) -> Response:
