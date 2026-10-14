@@ -323,6 +323,12 @@ export interface operations {
             query?: {
                 /** @description Número de página desde 1. Página inexistente responde items vacío con el total real. */
                 page?: number;
+                /** @description Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1). */
+                from?: string;
+                /** @description Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2). */
+                to?: string;
+                /** @description Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4). */
+                type?: "all" | "sent" | "received" | "recharge";
             };
             header?: never;
             path?: never;
@@ -330,7 +336,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
+            /** @description Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC) */
             200: {
                 headers: {
                     "X-Request-Id"?: string;
@@ -349,7 +355,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description page no es un entero desde 1 (code `validation`, errors[].field = page) */
+            /** @description `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo, todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2). */
             422: {
                 headers: {
                     [name: string]: unknown;

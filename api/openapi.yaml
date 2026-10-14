@@ -143,9 +143,37 @@ paths:
             type: integer
             minimum: 1
             default: 1
+        - name: from
+          in: query
+          required: false
+          description: Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-01"
+        - name: to
+          in: query
+          required: false
+          description: Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-31"
+        - name: type
+          in: query
+          required: false
+          description: >-
+            Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las
+            exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4).
+          schema:
+            type: string
+            enum: [all, sent, received, recharge]
+            default: all
       responses:
         "200":
-          description: Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC)
+          description: Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC)
           headers:
             X-Request-Id:
               schema: { type: string }
@@ -184,7 +212,9 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: page no es un entero desde 1 (code `validation`, errors[].field = page)
+          description: >-
+            `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo,
+            todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }

@@ -47,3 +47,10 @@ class WalletUser(HttpUser):
     def wallet(self) -> None:
         """HU-05 CA-6, RNF-02.1: p95 <= 2 s con 20 usuarios."""
         self.client.get("/api/v1/wallet", name="GET /api/v1/wallet")
+
+    @task
+    def movements_filtered(self) -> None:
+        """HU-10, RNF-02.2: el filtro por tipo no degrada el p95 de 3 s del historial."""
+        self.client.get(
+            "/api/v1/movements?type=recharge", name="GET /api/v1/movements?type=recharge"
+        )

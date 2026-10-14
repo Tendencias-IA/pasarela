@@ -247,7 +247,10 @@ describe("useRecharge (HU-08)", () => {
         return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 });
       }),
     );
-    const { result } = renderHook(() => ({ recharge: useRecharge(), movements: useMovements(1) }));
+    const { result } = renderHook(() => ({
+      recharge: useRecharge(),
+      movements: useMovements({ page: 1, from: "", to: "", type: "all" }),
+    }));
     await waitFor(() => {
       expect(result.current.movements.data).toBeDefined();
     });

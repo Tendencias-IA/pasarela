@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { setSessionExpiredHandler } from "../../../shared/api/client";
 import { renderHookWithProviders } from "../../../test/render";
 import { server } from "../../../test/server";
+import { DEFAULT_FILTERS } from "../filters";
 import { useMovements } from "../useMovements";
 import { pageOf } from "./fixtures";
 
@@ -21,7 +22,7 @@ describe("useMovements (HU-09)", () => {
       }),
     );
 
-    const { result } = renderHookWithProviders(() => useMovements(1));
+    const { result } = renderHookWithProviders(() => useMovements({ page: 1, ...DEFAULT_FILTERS }));
 
     await waitFor(() => {
       expect(result.current.data?.total).toBe(2);
@@ -40,9 +41,12 @@ describe("useMovements (HU-09)", () => {
       }),
     );
 
-    const { result, rerender } = renderHookWithProviders(({ page }) => useMovements(page), {
-      initialProps: { page: 1 },
-    });
+    const { result, rerender } = renderHookWithProviders(
+      ({ page }) => useMovements({ page, ...DEFAULT_FILTERS }),
+      {
+        initialProps: { page: 1 },
+      },
+    );
     await waitFor(() => {
       expect(result.current.data?.page).toBe(1);
     });
@@ -63,7 +67,7 @@ describe("useMovements (HU-09)", () => {
       http.get(PATH, () => HttpResponse.json({ items: [], page: 9, page_size: 20, total: 45 })),
     );
 
-    const { result } = renderHookWithProviders(() => useMovements(9));
+    const { result } = renderHookWithProviders(() => useMovements({ page: 9, ...DEFAULT_FILTERS }));
 
     await waitFor(() => {
       expect(result.current.isOutOfRange).toBe(true);
@@ -83,7 +87,7 @@ describe("useMovements (HU-09)", () => {
       ),
     );
 
-    const { result } = renderHookWithProviders(() => useMovements(1));
+    const { result } = renderHookWithProviders(() => useMovements({ page: 1, ...DEFAULT_FILTERS }));
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -100,7 +104,7 @@ describe("useMovements (HU-09)", () => {
       }),
     );
 
-    const { result } = renderHookWithProviders(() => useMovements(1));
+    const { result } = renderHookWithProviders(() => useMovements({ page: 1, ...DEFAULT_FILTERS }));
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
@@ -109,6 +113,79 @@ describe("useMovements (HU-09)", () => {
 
     await waitFor(() => {
       expect(result.current.data?.total).toBe(1);
+    });
+  });
+});
+
+describe("useMovements con filtros (HU-10)", () => {
+  it("envía solo los filtros con valor en la query (CA-1, CA-3, CA-4)", async () => {
+    const urls: string[] = [];
+    server.use(
+      http.get(PATH, ({ request }) => {
+        urls.push(new URL(request.url).search);
+        return HttpResponse.json(pageOf(1, 1));
+      }),
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMovements({ page: 2, from: "2026-10-01", to: "", type: "recharge" }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(urls).toEqual(["?from=2026-10-01&type=recharge&page=2"]);
+  });
+
+  it("sin filtros la query es solo la página, como en HU-09", async () => {
+    const urls: string[] = [];
+    server.use(
+      http.get(PATH, ({ request }) => {
+        urls.push(new URL(request.url).search);
+        return HttpResponse.json(pageOf(1, 1));
+      }),
+    );
+
+    const { result } = renderHookWithProviders(() => useMovements({ page: 1, ...DEFAULT_FILTERS }));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(urls).toEqual(["?page=1"]);
+  });
+
+  it("no consulta mientras la fecha inicial es posterior a la final (CA-2)", async () => {
+    let calls = 0;
+    server.use(
+      http.get(PATH, () => {
+        calls += 1;
+        return HttpResponse.json(pageOf(1, 1));
+      }),
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMovements({ page: 1, from: "2026-10-20", to: "2026-10-10", type: "all" }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(calls).toBe(0);
+    expect(result.current.fetchStatus).toBe("idle");
+  });
+
+  it("cada combinación de filtros tiene su propia clave bajo la raíz ['movements'] (HU-08 invalida por prefijo)", async () => {
+    server.use(http.get(PATH, () => HttpResponse.json(pageOf(1, 1))));
+    const { result, rerender } = renderHookWithProviders(
+      ({ type }: { type: "all" | "sent" }) => useMovements({ page: 1, from: "", to: "", type }),
+      { initialProps: { type: "all" } },
+    );
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    rerender({ type: "sent" });
+
+    await waitFor(() => {
+      expect(result.current.isPlaceholderData).toBe(false);
     });
   });
 });
