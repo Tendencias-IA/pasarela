@@ -3,7 +3,7 @@
 Todo lo listado aquí es bloqueante: si falla, el PR no se fusiona. Las reglas en prosa de
 `.claude/rules/` son guía; estos gates son la verificación. Definidos en
 `.github/workflows/checks.yml` (título y secretos, en todo PR), `.github/workflows/ci.yml`
-(jobs de código, solo cuando cambian `api/`, `webapp/` o `sonar-project.properties`) y
+(jobs de código, solo cuando cambian `api/` o `webapp/`) y
 `sonar-project.properties`.
 
 ## Gates del PR (CI)

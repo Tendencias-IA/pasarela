@@ -3,10 +3,10 @@ name: CI
 on:
   pull_request:
     branches: [main]
-    paths: ["api/**", "webapp/**", "sonar-project.properties"]
+    paths: ["api/**", "webapp/**"]
   push:
     branches: [main]
-    paths: ["api/**", "webapp/**", "sonar-project.properties"]
+    paths: ["api/**", "webapp/**"]
 
 concurrency:
   group: ci-${{ github.ref }}
