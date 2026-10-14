@@ -16,7 +16,9 @@ from app.extensions import db, limiter, migrate
 def create_app(config_name: str | None = None) -> Flask:
     """Construye la aplicación. Si no se pasa `config_name`, se lee de `APP_CONFIG`."""
     config_name = config_name or os.environ.get("APP_CONFIG", "development")
-    app = Flask(__name__)
+    # Falso positivo de python:S4502: la defensa CSRF es la cabecera X-Requested-With obligatoria
+    # en toda mutación (security.init_app) más SameSite=Lax en la cookie, no Flask-WTF (ADR-0004).
+    app = Flask(__name__)  # NOSONAR
     app.config.from_object(get_config(config_name))
 
     app_logging.init_app(app)
