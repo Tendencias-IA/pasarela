@@ -1,5 +1,6 @@
 import {
   IonContent,
+  IonButton,
   IonHeader,
   IonIcon,
   IonItem,
@@ -20,8 +21,12 @@ import {
   swapHorizontalOutline,
   walletOutline,
 } from "ionicons/icons";
-import type { ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { useLogout } from "../features/auth/useLogout";
+import { setSessionExpiredHandler } from "../shared/api/client";
 
 const NAV = [
   { href: "/", label: "Inicio", icon: homeOutline },
@@ -34,6 +39,32 @@ const NAV = [
 /** Barra lateral del diseño: menú fijo en escritorio y deslizable en móvil (IonSplitPane). */
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const close = useLogout(() => {
+    navigate("/login", { replace: true });
+  });
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      void client.cancelQueries();
+      client.clear();
+      navigate("/login", { replace: true });
+    });
+    // BFCache puede restaurar documentos sin remontar React: revalidar al restaurar.
+    const restore = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", restore);
+    return () => {
+      window.removeEventListener("pageshow", restore);
+      setSessionExpiredHandler(() => {
+        window.location.assign("/login");
+      });
+    };
+  }, [client, navigate]);
+  if (pathname === "/login" || pathname === "/registro") {
+    return <IonRouterOutlet id="main">{children}</IonRouterOutlet>;
+  }
   return (
     <IonSplitPane contentId="main" when="(min-width: 992px)">
       <IonMenu contentId="main" type="overlay">
@@ -58,13 +89,32 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </IonItem>
               </IonMenuToggle>
             ))}
-            <IonMenuToggle autoHide={false}>
-              <IonItem routerLink="/login" routerDirection="none" detail={false}>
-                <IonIcon slot="start" icon={logOutOutline} aria-hidden="true" />
-                <IonLabel>Cerrar sesión</IonLabel>
-              </IonItem>
-            </IonMenuToggle>
+            <IonItem
+              button
+              detail={false}
+              disabled={close.pending}
+              onClick={() => {
+                void close.submit();
+              }}
+              aria-label="Cerrar sesión"
+            >
+              <IonIcon slot="start" icon={logOutOutline} aria-hidden="true" />
+              <IonLabel>{close.pending ? "Cerrando sesión…" : "Cerrar sesión"}</IonLabel>
+            </IonItem>
           </IonList>
+          {close.error && (
+            <div className="ion-padding">
+              <p role="alert">{close.error}</p>
+              <IonButton
+                disabled={close.pending}
+                onClick={() => {
+                  void close.submit();
+                }}
+              >
+                Reintentar cierre
+              </IonButton>
+            </div>
+          )}
         </IonContent>
       </IonMenu>
       <IonRouterOutlet id="main">{children}</IonRouterOutlet>
