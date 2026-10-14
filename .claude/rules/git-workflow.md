@@ -20,6 +20,12 @@ ella sale producción. Ambientes: local y producción.
 
 ## Commits
 
+- Los cambios se revisan antes de confirmarse. La herramienta de IA deja el trabajo en el
+  árbol de trabajo, sin `git add` ni stash, para que la persona lo vea en el panel de
+  control de versiones (o con `git diff`) y decida qué entra en el commit. La IA no
+  ejecuta `git add`, `git commit` ni `git push` por su cuenta. Razón: el autor firma el
+  commit y responde por él; revisar después de confirmar invierte el orden y deja
+  commits que nadie leyó.
 - Formato de una línea: `type(PPA-n): descripción en minúscula e imperativo`, máximo
   72 caracteres. Varios tickets: `fix(PPA-6, PPA-7): ...`. Cambio incompatible:
   `feat(PPA-n)!: ...`.

@@ -33,11 +33,13 @@ webapp/
 │   │   ├── wallet/          # BalanceCard, RechargePage
 │   │   ├── transfers/       # TransferForm, TransferConfirm, TransferResult
 │   │   └── movements/       # MovementsPage, MovementsFilters, MovementRow
-│   └── shared/
-│       ├── api/             # client.ts (fetch + cookies + X-Requested-With), types.gen.ts, problem.ts
-│       ├── ui/              # Button, TextField, Alert, Money, EmptyState, Pagination
-│       ├── money/           # formatCOP, parseAmountInput
-│       └── i18n/            # mensajes en español por `code` de error
+│   ├── shared/
+│   │   ├── api/             # client.ts (fetch + cookies + X-Requested-With), types.gen.ts, problem.ts
+│   │   ├── ui/              # envoltorios finos sobre Ionic: MoneyInput, ResultBanner, EmptyState
+│   │   ├── money/           # formatCOP, parseAmountInput
+│   │   └── i18n/            # mensajes en español por `code` de error
+│   └── theme/
+│       └── variables.css    # variables de tema de Ionic
 ├── e2e/
 │   ├── pages/               # page objects
 │   ├── fixtures/            # usuarios y montos ficticios
@@ -52,6 +54,16 @@ webapp/
 
 ## Componentes y estado
 
+- Librería de componentes: **Ionic React** (ADR-0007). Toda pantalla es un `IonPage` con
+  `IonHeader`/`IonToolbar`/`IonTitle` y `IonContent`; formularios con `IonInput`,
+  `IonButton`, `IonList`/`IonItem`; resultados con `IonAlert` o `IonToast`; listas largas
+  con `IonInfiniteScroll`. No se mezclan otras librerías de UI ni frameworks CSS.
+  `shared/ui/` solo contiene envoltorios que añaden convenciones del proyecto sobre un
+  componente de Ionic (por ejemplo, `MoneyInput` fija `inputmode="decimal"` y el formato
+  COP). Razón: RNF-03 pide responsive y accesibilidad consistentes; Ionic las trae de
+  serie y evita reconstruirlas en cada historia.
+- Navegación con `@ionic/react-router` y `react-router-dom` 6 (`IonReactRouter`,
+  `IonRouterOutlet`, `Route`, `useNavigate`). Ionic 9 no soporta react-router 7.
 - Componentes de función con hooks. Sin clases, sin `any`, sin `// @ts-ignore`.
 - Estado del servidor (saldo, movimientos, perfil) con TanStack Query; estado de
   formulario con React Hook Form; estado global de UI mínimo (sesión activa) en un
@@ -75,11 +87,14 @@ webapp/
 
 ```tsx
 // Correcto
-<TextField
+<IonInput
   label="Monto (COP)"
-  inputMode="decimal"
-  error={errors.amount?.message}
-  {...register("amount", { validate: (v) => isWithinRange(v, TRANSFER_MIN, TRANSFER_MAX) })}
+  labelPlacement="stacked"
+  inputmode="decimal"
+  required
+  errorText={errors.amount?.message}
+  className={errors.amount ? "ion-invalid ion-touched" : ""}
+  onIonInput={(e) => setValue("amount", String(e.detail.value ?? ""))}
 />
 ```
 
@@ -89,7 +104,8 @@ webapp/
 ```
 
 Diferencia: la segunda versión no tiene etiqueta accesible, pierde precisión con
-`parseFloat` y no muestra errores asociados al campo.
+`parseFloat` y no muestra errores asociados al campo. En Ionic la etiqueta se pasa por la
+propiedad `label` (no con `<label for>`), porque el `input` real vive en el shadow DOM.
 
 ## Resultado de operaciones
 
@@ -153,7 +169,8 @@ export class TransferPage {
 Misma política que la API: añadir una dependencia requiere ADR corto y commit propio
 (`build(PPA-n): add <paquete>`), versiones exactas en `package.json` (`npm install
 --save-exact`). Node 22 (`.nvmrc`). Lista inicial permitida: `react`, `react-dom`,
-`react-router-dom`, `@tanstack/react-query`, `react-hook-form`; dev: `vite`,
+`@ionic/react`, `@ionic/react-router`, `ionicons`, `react-router-dom` 6,
+`@tanstack/react-query`, `react-hook-form`; dev: `vite`,
 `@vitejs/plugin-react`, `typescript` 5.x, `vitest`, `@vitest/coverage-v8`,
 `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`,
 `jsdom`, `msw` 2.x, `@playwright/test`, `@axe-core/playwright`, `openapi-typescript`,
