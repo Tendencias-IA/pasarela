@@ -3,8 +3,10 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    paths: ["api/**", "webapp/**", "sonar-project.properties"]
   push:
     branches: [main]
+    paths: ["api/**", "webapp/**", "sonar-project.properties"]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -12,52 +14,10 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-  pr-title:
-    name: Título del PR
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Validar formato type(PPA-n): descripción"
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          if ! printf '%s' "$TITLE" | grep -Eq '^(feat|fix|docs|refactor|test|chore|build|ci|perf|revert)\((PPA-[0-9]+)(, ?PPA-[0-9]+)*\)!?: [a-záéíóúñ0-9].+'; then
-            echo "::error::El título debe ser 'type(PPA-n): descripción en minúscula'. Recibido: $TITLE"
-            exit 1
-          fi
-
-  secrets:
-    name: Secretos
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: gitleaks (CLI, sin licencia de organización)
-        run: >-
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1
-          git /repo --redact --exit-code 1 --no-banner
-
-  detect:
-    name: Detectar proyectos
-    runs-on: ubuntu-latest
-    outputs:
-      api: ${{ steps.check.outputs.api }}
-      webapp: ${{ steps.check.outputs.webapp }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: check
-        run: |
-          [ -f api/pyproject.toml ] && echo "api=true" >> "$GITHUB_OUTPUT" || echo "api=false" >> "$GITHUB_OUTPUT"
-          [ -f webapp/package.json ] && echo "webapp=true" >> "$GITHUB_OUTPUT" || echo "webapp=false" >> "$GITHUB_OUTPUT"
-
   api:
     name: API (ruff, mypy, pytest ≥ 90 %)
-    needs: detect
-    if: needs.detect.outputs.api == 'true'
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -104,8 +64,6 @@ jobs:
 
   webapp:
     name: Webapp (eslint, tsc, vitest, build)
-    needs: detect
-    if: needs.detect.outputs.webapp == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -129,8 +87,7 @@ jobs:
 
   e2e:
     name: E2E Playwright (escritorio y móvil)
-    needs: [detect, api, webapp]
-    if: needs.detect.outputs.api == 'true' && needs.detect.outputs.webapp == 'true'
+    needs: [api, webapp]
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -182,8 +139,7 @@ jobs:
 
   sonar:
     name: SonarQube quality gate
-    needs: [detect, api, webapp]
-    if: always() && needs.detect.outputs.api == 'true' && needs.api.result == 'success' && (needs.webapp.result == 'success' || needs.webapp.result == 'skipped')
+    needs: [api, webapp]
     runs-on: ubuntu-latest
     services:
       sonarqube:
@@ -204,10 +160,8 @@ jobs:
           test -f api-coverage/coverage.xml || { echo "::error::Falta api-coverage/coverage.xml"; exit 1; }
           cp api-coverage/coverage.xml api/
           cp api-coverage/ruff-report.json api/ || true
-          if [ -d webapp-coverage ]; then
-            test -f webapp-coverage/lcov.info || { echo "::error::Falta webapp-coverage/lcov.info"; exit 1; }
-            mkdir -p webapp/coverage && cp webapp-coverage/lcov.info webapp/coverage/
-          fi
+          test -f webapp-coverage/lcov.info || { echo "::error::Falta webapp-coverage/lcov.info"; exit 1; }
+          mkdir -p webapp/coverage && cp webapp-coverage/lcov.info webapp/coverage/
       - name: Esperar SonarQube y crear token
         id: token
         env:
@@ -248,12 +202,3 @@ jobs:
           SONAR_TOKEN: ${{ steps.token.outputs.token }}
           SONAR_HOST_URL: http://localhost:9000
 
-  resultado:
-    name: CI verde
-    needs: [pr-title, secrets, detect, api, webapp, e2e, sonar]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verificar que ningún job requerido falló
-        run: |
-          echo '${{ toJSON(needs) }}' | grep -Eq '"result": "(failure|cancelled)"' && exit 1 || echo "OK"

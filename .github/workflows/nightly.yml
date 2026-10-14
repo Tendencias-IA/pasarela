@@ -1,31 +1,17 @@
 name: Nightly
 
 on:
-  schedule:
-    - cron: "0 6 * * *"   # 01:00 Bogotá
   workflow_dispatch:
+  # Activar el cron cuando existan api/ y webapp/; antes fallaría cada noche sin aportar nada.
+  # schedule:
+  #   - cron: "0 6 * * *"   # 01:00 Bogotá
 
 permissions:
   contents: read
 
 jobs:
-  detect:
-    name: Detectar proyectos
-    runs-on: ubuntu-latest
-    outputs:
-      api: ${{ steps.check.outputs.api }}
-      webapp: ${{ steps.check.outputs.webapp }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: check
-        run: |
-          [ -f api/pyproject.toml ] && echo "api=true" >> "$GITHUB_OUTPUT" || echo "api=false" >> "$GITHUB_OUTPUT"
-          [ -f webapp/package.json ] && echo "webapp=true" >> "$GITHUB_OUTPUT" || echo "webapp=false" >> "$GITHUB_OUTPUT"
-
   audit-api:
     name: pip-audit
-    needs: detect
-    if: needs.detect.outputs.api == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,8 +27,6 @@ jobs:
 
   audit-webapp:
     name: npm audit
-    needs: detect
-    if: needs.detect.outputs.webapp == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -59,8 +43,6 @@ jobs:
 
   load:
     name: Carga (Locust, RNF-02)
-    needs: detect
-    if: needs.detect.outputs.api == 'true'
     runs-on: ubuntu-latest
     services:
       mysql:

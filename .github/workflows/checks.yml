@@ -1,0 +1,38 @@
+name: Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    name: Título del PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Validar formato type(PPA-n): descripción"
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! printf '%s' "$TITLE" | grep -Eq '^(feat|fix|docs|refactor|test|chore|build|ci|perf|revert)\((PPA-[0-9]+)(, ?PPA-[0-9]+)*\)!?: [a-záéíóúñ0-9].+'; then
+            echo "::error::El título debe ser 'type(PPA-n): descripción en minúscula'. Recibido: $TITLE"
+            exit 1
+          fi
+
+  secrets:
+    name: Secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks (CLI, sin licencia de organización)
+        run: >-
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1
+          git /repo --redact --exit-code 1 --no-banner
+

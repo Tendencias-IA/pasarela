@@ -2,7 +2,9 @@
 
 Todo lo listado aquí es bloqueante: si falla, el PR no se fusiona. Las reglas en prosa de
 `.claude/rules/` son guía; estos gates son la verificación. Definidos en
-`.github/workflows/ci.yml` y `sonar-project.properties`.
+`.github/workflows/checks.yml` (título y secretos, en todo PR), `.github/workflows/ci.yml`
+(jobs de código, solo cuando cambian `api/`, `webapp/` o `sonar-project.properties`) y
+`sonar-project.properties`.
 
 ## Gates del PR (CI)
 
@@ -57,8 +59,8 @@ migra a SonarCloud cambiando solo las variables `SONAR_HOST_URL` y `SONAR_TOKEN`
 
 ## Gates nocturnos (no bloquean el PR, bloquean el release)
 
-Definidos en `.github/workflows/nightly.yml` (cron diario y ejecución manual); se activan
-cuando existen `api/` y `webapp/`.
+Definidos en `.github/workflows/nightly.yml`. Hoy se ejecutan a mano (`workflow_dispatch`);
+el cron diario se activa en el mismo PR que cree `api/` y `webapp/`.
 
 - Prueba de carga con Locust (`api/tests/load/locustfile.py`): p95 ≤ 2 s en
   `GET /api/v1/wallet`, p95 ≤ 3 s en `GET /api/v1/movements`, `POST /api/v1/transfers` y
