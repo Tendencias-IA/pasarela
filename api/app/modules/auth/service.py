@@ -17,7 +17,7 @@ from flask import current_app
 
 from app.common.errors import AppError
 from app.common.passwords import hash_password, verify_password
-from app.extensions import db
+from app.extensions import db, transaction
 from app.modules.accounts import service as accounts_service
 from app.modules.auth import repository
 from app.modules.auth.models import Session
@@ -101,3 +101,21 @@ def get_current_session(token: str | None) -> Session | None:
     if session.expires_at <= _utcnow():
         return None
     return session
+
+
+def logout(token: str | None) -> None:
+    """HU-03 CA-1/CA-4: revoca únicamente la sesión activa, sin modificar la cuenta."""
+    with transaction():
+        session = get_current_session(token)
+        if session is None or not repository.revoke_session(session.id, _utcnow()):
+            raise InvalidSessionError("Inicia sesión para continuar.")
+        user_id = session.user_id
+    log.info("auth.logout", extra={"user_id": user_id})
+
+
+def session_expiry(token: str | None) -> str:
+    """Consulta mínima de acceso para HU-03 CA-2/CA-3, sin renovar la sesión."""
+    session = get_current_session(token)
+    if session is None:
+        raise InvalidSessionError("Inicia sesión para continuar.")
+    return session.expires_at.replace(tzinfo=UTC).isoformat()

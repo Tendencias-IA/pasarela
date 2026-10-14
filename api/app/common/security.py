@@ -34,4 +34,6 @@ def init_app(app: Flask) -> None:
     def add_security_headers(response: Response) -> Response:
         for name, value in SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
+        if request.path.startswith("/api/v1/auth/") or request.cookies.get("session"):
+            response.headers["Cache-Control"] = "no-store"
         return response

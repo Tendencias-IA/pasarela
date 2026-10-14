@@ -9,6 +9,53 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Revocar la sesión activa (HU-03)
+      tags: [auth]
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema: { type: string, enum: [fetch] }
+      responses:
+        "204":
+          description: Sesión revocada, sin cuerpo; cookie eliminada.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, enum: [no-store] }
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Falta X-Requested-With
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+  /api/v1/auth/session:
+    get:
+      operationId: sessionStatus
+      summary: Consultar el acceso vigente sin renovar la sesión (HU-03 CA-2/CA-3)
+      tags: [auth]
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Sesión válida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatus"
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
   /api/v1/wallet/recharges:
     post:
       operationId: createRecharge
@@ -304,6 +351,12 @@ components:
       in: cookie
       name: session
   schemas:
+    SessionStatus:
+      type: object
+      additionalProperties: false
+      required: [expires_at]
+      properties:
+        expires_at: { type: string, format: date-time }
     UpdatePhoneRequest:
       type: object
       additionalProperties: false
