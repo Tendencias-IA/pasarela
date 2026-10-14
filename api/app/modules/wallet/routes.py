@@ -15,9 +15,9 @@ bp = Blueprint("wallet", __name__)
 @bp.get("", strict_slashes=False)
 @login_required
 def get_wallet() -> tuple[Response, int]:
-    user_id = current_user_id()  # nunca de la query ni de la URL (security.md, HU-05 CA-4)
-    balance = service.get_balance(user_id)
-    return jsonify(WalletOut.from_balance(balance).model_dump()), 200
+    user_id = current_user_id()  # nunca de la query (HU-05 CA-4, security.md)
+    result = service.get_balance(user_id)
+    return jsonify(WalletOut.from_balance(result).model_dump()), 200
 
 
 @bp.post("/recharges")

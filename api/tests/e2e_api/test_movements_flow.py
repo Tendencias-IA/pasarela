@@ -115,3 +115,84 @@ def test_page_beyond_last_is_empty_with_real_total(
 
     assert response.status_code == 200
     assert response.get_json() == {"items": [], "page": 9, "page_size": 20, "total": 1}
+
+
+def _today() -> str:
+    from app.common.clock import utcnow
+
+    return utcnow().date().isoformat()
+
+
+def test_type_filter_returns_only_recharges_and_empty_for_sent(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser]
+) -> None:
+    """HU-10 CA-3, CA-7: filtrar recargas muestra filas; enviadas, vacío con filtros válidos."""
+    wallet_service.create_wallet(1)
+    _recharge(logged_in_client, "50000.00", "d1")
+    _recharge(logged_in_client, "4999.00", "d2")
+
+    recharges = logged_in_client.get(f"{URL}?type=recharge").get_json()
+    sent = logged_in_client.get(f"{URL}?type=sent")
+
+    assert recharges["total"] == 2
+    assert all(i["direction"] == "recarga" for i in recharges["items"])
+    assert sent.status_code == 200
+    assert sent.get_json() == {"items": [], "page": 1, "page_size": 20, "total": 0}
+
+
+def test_date_and_type_filters_combine_over_http(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser]
+) -> None:
+    """HU-10 CA-1, CA-4: hoy + recargas devuelve la recarga; ayer, nada."""
+    wallet_service.create_wallet(1)
+    _recharge(logged_in_client, "50000.00", "e1")
+    today = _today()
+
+    hit = logged_in_client.get(f"{URL}?from={today}&to={today}&type=recharge").get_json()
+    miss = logged_in_client.get(f"{URL}?to=2000-01-01&type=recharge").get_json()
+
+    assert hit["total"] == 1
+    assert miss["total"] == 0
+
+
+def test_reversed_range_is_422_invalid_date_range(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser]
+) -> None:
+    """HU-10 CA-2, RNF-01.4."""
+    wallet_service.create_wallet(1)
+
+    response = logged_in_client.get(f"{URL}?from=2026-12-31&to=2026-01-01")
+
+    assert response.status_code == 422
+    body = response.get_json()
+    assert body["code"] == "invalid_date_range"
+    assert body["detail"] == "La fecha inicial no puede ser posterior a la final."
+    assert "2026" not in body["detail"]
+
+
+@pytest.mark.parametrize(
+    ("query", "fields"),
+    [
+        ("from=2026-02-31", ["from"]),
+        ("to=ayer", ["to"]),
+        ("type=foo", ["type"]),
+        ("page=0&from=x&type=y", ["page", "from", "type"]),
+    ],
+)
+def test_invalid_filter_values_are_422_validation(
+    logged_in_client: FlaskClient, seeded_users: list[SeededUser], query: str, fields: list[str]
+) -> None:
+    """HU-10 CA-1, CA-3."""
+    response = logged_in_client.get(f"{URL}?{query}")
+
+    assert response.status_code == 422
+    body = response.get_json()
+    assert body["code"] == "validation"
+    assert [e["field"] for e in body["errors"]] == fields
+
+
+def test_filters_without_session_are_rejected(
+    client: FlaskClient, seeded_users: list[SeededUser]
+) -> None:
+    """HU-10, RNF-01.1."""
+    assert client.get(f"{URL}?type=recharge").status_code == 401

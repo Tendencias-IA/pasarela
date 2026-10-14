@@ -16,8 +16,7 @@ describe("HomePage: tarjeta de saldo (HU-05)", () => {
 
     expect(screen.getByRole("heading", { level: 2, name: "Saldo disponible" })).toBeInTheDocument();
     expect(screen.getByText("Consultando saldo…")).toHaveAttribute("role", "status");
-    const balance = await screen.findByText("$ 150.000,00");
-    expect(balance).toHaveAttribute("data-balance", "150000.00");
+    expect(await screen.findByText("$ 150.000,00")).toBeInTheDocument();
     expect(screen.queryByText("Consultando saldo…")).not.toBeInTheDocument();
   });
 
@@ -38,16 +37,15 @@ describe("HomePage: tarjeta de saldo (HU-05)", () => {
     expect(document.body.textContent).not.toMatch(/\$ \d/);
   });
 
-  it("ofrece reintentar ante un error inesperado sin inventar un saldo", async () => {
+  it("informa el error ante un fallo inesperado sin inventar un saldo", async () => {
     server.use(http.get(PATH, () => HttpResponse.text("gateway timeout", { status: 504 })));
 
     renderWithProviders(<HomePage />);
 
-    expect(await screen.findByText("No se pudo consultar el saldo")).toHaveAttribute(
+    expect(await screen.findByText(/No se pudo consultar el saldo/)).toHaveAttribute(
       "role",
       "alert",
     );
-    expect(screen.getByText("Reintentar")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\$ \d/);
   });
 

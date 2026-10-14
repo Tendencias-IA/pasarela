@@ -18,7 +18,7 @@ para encajar con el panel y TanStack Query que HU-09 ya dejó en la webapp.
 ## 2. La billetera es propiedad del módulo `wallet`; la lectura no escribe
 
 - **Decisión**: reutilizar `wallets` y el modelo `Wallet` de HU-08. El servicio
-  `wallet_service.get_balance(user_id) -> Decimal` usa `repository.get_wallet_by_user`
+  `wallet_service.get_balance(user_id) -> WalletBalance` usa `repository.get_wallet_by_user`
   (sin `FOR UPDATE`, sin `with transaction()`), y lanza `WalletNotFoundError` (ya existe)
   si no hay billetera, tras un `log.warning("wallet.missing", extra={"user_id": ...})`.
 - **Razón**: `architecture.md` asigna HU-05 a `wallet`. Una lectura con bloqueo
@@ -50,7 +50,7 @@ para encajar con el panel y TanStack Query que HU-09 ya dejó en la webapp.
   `app/HomePage.tsx` muestra una tarjeta "Saldo disponible" con `formatCOP(balance)`,
   estado "Consultando saldo…" (`role="status"`), "Saldo no disponible" ante
   `404 wallet_not_found` (`role="alert"`) y "No se pudo consultar el saldo" con
-  "Reintentar" ante otros errores. `useRecharge.ts` invalida `["wallet"]` además de
+  el mensaje de error ante otros. `useRecharge.ts` invalida `["wallet"]` además de
   `["movements"]` tras un `201`. El `401` ya redirige a `/login` vía `client.ts`.
 - **Razón**: RF-03 dice "el usuario abre la pantalla principal"; `webapp.md` exige
   TanStack Query para estado del servidor e invalidar la query de saldo tras recargas

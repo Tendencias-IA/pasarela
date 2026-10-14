@@ -40,4 +40,42 @@ export class MovementsPage {
   nextButton() {
     return this.page.getByRole("button", { name: "Siguiente" });
   }
+
+  // --- Filtros (HU-10) ---
+
+  fromField() {
+    return this.page.getByLabel("Desde");
+  }
+
+  toField() {
+    return this.page.getByLabel("Hasta");
+  }
+
+  typeSelect() {
+    return this.page.getByLabel("Tipo");
+  }
+
+  async fillRange(from: string, to: string) {
+    if (from) await this.fromField().fill(from);
+    if (to) await this.toField().fill(to);
+  }
+
+  /** Abre el selector (alert de Ionic), elige la opción y confirma. */
+  async selectType(label: string) {
+    await this.typeSelect().click();
+    await this.page.getByRole("radio", { name: label }).click();
+    await this.page.getByRole("button", { name: "Aceptar" }).click();
+  }
+
+  filteredEmptyState() {
+    return this.page.getByText("No hay movimientos con esos filtros");
+  }
+
+  clearFiltersButton() {
+    return this.page.getByRole("button", { name: "Quitar filtros" });
+  }
+
+  rangeError() {
+    return this.page.getByText("La fecha inicial no puede ser posterior a la final.");
+  }
 }

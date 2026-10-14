@@ -2,41 +2,81 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
+from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic import ValidationError as PydanticValidationError
 
 from app.common.errors import ValidationError
 from app.common.money import to_json
+from app.modules.movements.repository import MovementsFilter, MovementType
 from app.modules.movements.service import Movement, MovementsPage
 
 PAGE_MESSAGE = "La página debe ser un entero desde 1."
+DATE_MESSAGE = "La fecha debe tener el formato AAAA-MM-DD."
+TYPE_MESSAGE = "El tipo debe ser all, sent, received o recharge."
+_DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 class MovementsQuery(BaseModel):
-    """Query string de GET /movements. `from`, `to` y `type` llegan con HU-10; hoy se ignoran."""
+    """Query string de GET /movements: página (HU-09) y filtros from, to, type (HU-10)."""
 
     model_config = ConfigDict(extra="ignore")
 
     page: int = Field(default=1, ge=1)
+    from_: date | None = None
+    to: date | None = None
+    type_: MovementType = MovementType.ALL
+
+    @property
+    def filters(self) -> MovementsFilter:
+        return MovementsFilter(from_=self.from_, to=self.to, type_=self.type_)
 
     @classmethod
     def parse(cls, args: Mapping[str, str]) -> MovementsQuery:
-        raw = args.get("page")
-        if raw is None:
-            return cls()
-        text = raw.strip()
-        if not (text.isascii() and text.isdigit()):  # "abc", "1.5", "-1", "", "²" → nunca válido
-            raise ValidationError("Revisa los campos indicados.", errors=_page_error())
+        """Valida todo a la vez (RNF-03.2). `from > to` lo decide el servicio (HU-10 CA-2)."""
+        errors: list[dict[str, str]] = []
+        page = _parse_page(args.get("page"), errors)
+        from_ = _parse_date("from", args.get("from"), errors)
+        to = _parse_date("to", args.get("to"), errors)
+        type_ = _parse_type(args.get("type"), errors)
+        if errors:
+            raise ValidationError("Revisa los campos indicados.", errors=errors)
+        return cls(page=page, from_=from_, to=to, type_=type_)
+
+
+def _parse_page(raw: str | None, errors: list[dict[str, str]]) -> int:
+    if raw is None:
+        return 1
+    text = raw.strip()
+    # "abc", "1.5", "-1", "", "²" → nunca válido
+    if text.isascii() and text.isdigit() and int(text) >= 1:
+        return int(text)
+    errors.append({"field": "page", "message": PAGE_MESSAGE})
+    return 1
+
+
+def _parse_date(field: str, raw: str | None, errors: list[dict[str, str]]) -> date | None:
+    if raw is None:
+        return None
+    if _DATE_PATTERN.fullmatch(raw):
         try:
-            return cls(page=int(text))
-        except PydanticValidationError:
-            raise ValidationError("Revisa los campos indicados.", errors=_page_error()) from None
+            return date.fromisoformat(raw)
+        except ValueError:  # "2026-02-31": con forma de fecha pero inexistente
+            pass
+    errors.append({"field": field, "message": DATE_MESSAGE})
+    return None
 
 
-def _page_error() -> list[dict[str, str]]:
-    return [{"field": "page", "message": PAGE_MESSAGE}]
+def _parse_type(raw: str | None, errors: list[dict[str, str]]) -> MovementType:
+    if raw is None:
+        return MovementType.ALL
+    try:
+        return MovementType(raw)
+    except ValueError:
+        errors.append({"field": "type", "message": TYPE_MESSAGE})
+        return MovementType.ALL
 
 
 class CounterpartyOut(BaseModel):

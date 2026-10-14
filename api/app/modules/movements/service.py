@@ -9,15 +9,33 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from app.common.errors import AppError
 from app.common.masking import HIDDEN, mask_name, mask_phone
 from app.common.models.transaction import TransactionStatus, TransactionType
-from app.modules.movements.repository import MovementsRepository, TransactionRow, default_repository
+from app.modules.movements.repository import (
+    MovementsFilter,
+    MovementsRepository,
+    TransactionRow,
+    default_repository,
+)
 from app.modules.wallet import service as wallet_service
 from app.modules.wallet.service import WalletOwner
 
 log = logging.getLogger("app.movements")
 
+NO_FILTERS = MovementsFilter()
 PAGE_SIZE = 20  # RF-05: fijo, no configurable por query (api-design.md)
+
+
+class InvalidDateRangeError(AppError):
+    """La fecha inicial es posterior a la final (HU-10 CA-2)."""
+
+    status = 422
+    code = "invalid_date_range"
+    title = "Rango de fechas inválido"
+
+    def __init__(self) -> None:
+        super().__init__("La fecha inicial no puede ser posterior a la final.")
 
 
 class Direction(enum.StrEnum):
@@ -63,6 +81,7 @@ OwnersFor = Callable[[Iterable[int]], dict[int, WalletOwner]]
 def list_movements(
     user_id: int,
     page: int,
+    filters: MovementsFilter = NO_FILTERS,
     *,
     repo: MovementsRepository = default_repository,
     wallet_id_for: WalletIdFor = wallet_service.get_wallet_id,
@@ -70,20 +89,35 @@ def list_movements(
 ) -> MovementsPage:
     """Página `page` (desde 1) de los movimientos de la billetera del usuario.
 
+    `filters` acota por tipo y rango de días; `from > to` se rechaza antes de consultar
+    (HU-10 CA-2, RNF-01.4).
+
     Sin billetera (dato inconsistente) responde vacío sin crearla. Una página más allá
     de la última responde vacía con el `total` real (FR-009).
     """
+    if filters.from_ is not None and filters.to is not None and filters.from_ > filters.to:
+        raise InvalidDateRangeError()
     wallet_id = wallet_id_for(user_id)
     if wallet_id is None:
         log.warning("movements.wallet_missing", extra={"user_id": user_id})
         return MovementsPage(items=[], page=page, page_size=PAGE_SIZE, total=0)
 
     offset = (page - 1) * PAGE_SIZE
-    rows = repo.list_for_wallet(wallet_id, offset=offset, limit=PAGE_SIZE)
-    total = repo.count_for_wallet(wallet_id)
+    rows = repo.list_for_wallet(wallet_id, filters, offset=offset, limit=PAGE_SIZE)
+    total = repo.count_for_wallet(wallet_id, filters)
     owners = _resolve_owners(rows, wallet_id, owners_for)
     items = [_project(row, wallet_id, owners) for row in rows]
-    log.info("movements.listed", extra={"user_id": user_id, "page": page, "total": total})
+    # FR-013: qué filtros se aplicaron, nunca las fechas ni datos de terceros.
+    log.info(
+        "movements.listed",
+        extra={
+            "user_id": user_id,
+            "page": page,
+            "total": total,
+            "type": filters.type_.value,
+            "date_range": filters.from_ is not None or filters.to is not None,
+        },
+    )
     return MovementsPage(items=items, page=page, page_size=PAGE_SIZE, total=total)
 
 

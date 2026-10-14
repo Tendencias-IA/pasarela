@@ -59,9 +59,9 @@ export function useRecharge() {
     try {
       const result = await postRecharge(canonical, keyRef.current);
       setState({ kind: "success", result });
-      // webapp.md: el historial (HU-09) y el saldo (HU-05 CA-3) reflejan la recarga.
+      // webapp.md: el historial (HU-09) debe reflejar la recarga en su siguiente consulta.
       void queryClient.invalidateQueries({ queryKey: MOVEMENTS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY }); // HU-05 CA-3
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         const byField = error.messagesByField();

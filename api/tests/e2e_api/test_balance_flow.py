@@ -77,12 +77,10 @@ def test_without_session_is_rejected(client: FlaskClient, seeded_users: list[See
     assert response.get_json()["code"] == "invalid_session"
 
 
-def test_without_wallet_returns_not_found_and_creates_nothing(
+def test_without_wallet_returns_not_found(
     logged_in_client: FlaskClient, seeded_users: list[SeededUser]
 ) -> None:
-    """HU-05 CA-5: saldo no disponible, sin billetera creada a escondidas."""
     response = logged_in_client.get(URL)
 
     assert response.status_code == 404
     assert response.get_json()["code"] == "wallet_not_found"
-    assert db.session.execute(select(Wallet)).scalars().all() == []

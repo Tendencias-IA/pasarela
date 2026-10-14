@@ -83,23 +83,28 @@ class RechargeResult:
         }
 
 
-def get_balance(user_id: int, repo: WalletRepository = default_repository) -> Decimal:
-    """Saldo persistido de la billetera del usuario (HU-05). Solo lectura: sin bloqueo ni escritura.
-
-    Sin billetera (dato inconsistente) registra el error técnico y lanza `WalletNotFoundError`;
-    nunca crea la billetera ni devuelve cero (HU-05 CA-5).
-    """
-    wallet = repo.get_wallet_by_user(user_id)
-    if wallet is None:
-        log.warning("wallet.missing", extra={"user_id": user_id})
-        raise WalletNotFoundError("El usuario no tiene una billetera asociada.")
-    return wallet.balance
-
-
 def get_wallet_id(user_id: int, repo: WalletRepository = default_repository) -> int | None:
     """Id de la billetera del usuario, o None si no tiene (sin abrir transacción propia)."""
     wallet = repo.get_wallet_by_user(user_id)
     return None if wallet is None else wallet.id
+
+
+@dataclass(frozen=True)
+class WalletBalance:
+    balance: Decimal
+
+
+def get_balance(user_id: int, repo: WalletRepository = default_repository) -> WalletBalance:
+    """Saldo persistido de la billetera del usuario (HU-05). Solo lectura: sin bloqueo.
+
+    Sin billetera (dato inconsistente) lanza `WalletNotFoundError` y registra el error
+    técnico (HU-05 CA-5); no se crea una billetera a escondidas.
+    """
+    wallet = repo.get_wallet_by_user(user_id)
+    if wallet is None:
+        log.warning("wallet.missing", extra={"user_id": user_id})
+        raise WalletNotFoundError("El saldo no está disponible: la cuenta no tiene billetera.")
+    return WalletBalance(balance=wallet.balance)
 
 
 @dataclass(frozen=True)

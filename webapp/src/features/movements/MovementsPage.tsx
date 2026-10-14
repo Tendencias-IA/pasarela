@@ -13,32 +13,50 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { EmptyState } from "./EmptyState";
+import {
+  DEFAULT_FILTERS,
+  hasActiveFilters,
+  parseFilters,
+  parsePage,
+  rangeError,
+  toSearchParams,
+  type MovementsFilterValues,
+} from "./filters";
 import { MovementItem } from "./MovementItem";
+import { MovementsFilters } from "./MovementsFilters";
 import { Pagination } from "./Pagination";
 import { useMovements } from "./useMovements";
 
-function pageFromParams(params: URLSearchParams): number {
-  const raw = Number(params.get("page") ?? "1");
-  return Number.isInteger(raw) && raw >= 1 ? raw : 1;
-}
-
-/** HU-09: historial paginado de la billetera del usuario autenticado. */
+/**
+ * HU-09: historial paginado de la billetera del usuario autenticado.
+ * HU-10: filtros de fecha y tipo; viven en la URL junto con la página (CA-7), así recargar y
+ * "atrás" los conservan.
+ */
 export function MovementsPage() {
   const [params, setParams] = useSearchParams();
-  const page = pageFromParams(params);
-  const { data, isPending, isError, refetch, lastPage, isOutOfRange } = useMovements(page);
+  const page = parsePage(params);
+  const filters = parseFilters(params);
+  const invalidRange = rangeError(filters);
+  const { data, isLoading, isError, refetch, lastPage, isOutOfRange } = useMovements({
+    page,
+    ...filters,
+  });
   const contentRef = useRef<HTMLIonContentElement>(null);
 
   const goTo = (next: number) => {
-    setParams(next === 1 ? {} : { page: String(next) });
+    setParams(toSearchParams(filters, next));
     void contentRef.current?.scrollToTop(200);
+  };
+
+  // HU-10 CA-6: cualquier cambio de filtro vuelve a la primera página.
+  const changeFilters = (next: MovementsFilterValues) => {
+    setParams(toSearchParams(next, 1));
   };
 
   // FR-009: una página más allá de la última no es un error; se lleva a la última válida.
   useEffect(() => {
-    if (isOutOfRange)
-      setParams(lastPage === 1 ? {} : { page: String(lastPage) }, { replace: true });
-  }, [isOutOfRange, lastPage, setParams]);
+    if (isOutOfRange) setParams(toSearchParams(parseFilters(params), lastPage), { replace: true });
+  }, [isOutOfRange, lastPage, params, setParams]);
 
   return (
     <IonPage>
@@ -55,7 +73,8 @@ export function MovementsPage() {
         <p className="tai-muted">
           Recargas y transferencias de tu billetera, de la más reciente a la más antigua.
         </p>
-        {isPending && <p role="status">Cargando…</p>}
+        <MovementsFilters values={filters} rangeError={invalidRange} onChange={changeFilters} />
+        {isLoading && <p role="status">Cargando…</p>}
         {isError && (
           <div role="alert" className="tai-card" style={{ marginTop: 16 }}>
             <p style={{ margin: "0 0 12px" }}>No se pudo cargar el historial.</p>
@@ -69,7 +88,14 @@ export function MovementsPage() {
             </IonButton>
           </div>
         )}
-        {data !== undefined && data.total === 0 && <EmptyState />}
+        {data !== undefined && data.total === 0 && (
+          <EmptyState
+            filtered={hasActiveFilters(filters)}
+            onClearFilters={() => {
+              changeFilters(DEFAULT_FILTERS);
+            }}
+          />
+        )}
         {data !== undefined && data.total > 0 && (
           <>
             <IonList

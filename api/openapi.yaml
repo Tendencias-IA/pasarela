@@ -12,22 +12,19 @@ paths:
   /api/v1/wallet:
     get:
       operationId: getWallet
-      summary: Consultar el saldo de la billetera del usuario autenticado (HU-05)
+      summary: Saldo disponible de la billetera del usuario autenticado (HU-05)
       tags: [wallet]
       security:
         - sessionCookie: []
       responses:
         "200":
-          description: Saldo disponible de la única billetera del usuario de la sesión (HU-05 CA-1, CA-2)
-          headers:
-            X-Request-Id:
-              schema: { type: string }
+          description: Saldo persistido
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/WalletOut"
               examples:
-                disponible:
+                saldo:
                   value: { balance: "150000.00" }
         "401":
           description: Sin sesión válida (code `invalid_session`)
@@ -35,7 +32,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "404":
-          description: El usuario no tiene billetera asociada (code `wallet_not_found`); se registra el error técnico (HU-05 CA-5)
+          description: La cuenta no tiene billetera (code `wallet_not_found`)
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -146,9 +143,37 @@ paths:
             type: integer
             minimum: 1
             default: 1
+        - name: from
+          in: query
+          required: false
+          description: Fecha inicial AAAA-MM-DD, inclusiva desde las 00:00:00 UTC. Sin ella el rango queda abierto por el inicio (HU-10 CA-1).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-01"
+        - name: to
+          in: query
+          required: false
+          description: Fecha final AAAA-MM-DD, inclusiva hasta las 23:59:59 UTC. Debe ser igual o posterior a `from` (HU-10 CA-1, CA-2).
+          schema:
+            type: string
+            format: date
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-10-31"
+        - name: type
+          in: query
+          required: false
+          description: >-
+            Tipo (HU-10 CA-3). `sent` incluye las transferencias rechazadas del emisor; `received` solo las
+            exitosas; `recharge` recargas exitosas y rechazadas. Combinable con `from` y `to` (CA-4).
+          schema:
+            type: string
+            enum: [all, sent, received, recharge]
+            default: all
       responses:
         "200":
-          description: Página de movimientos ordenados del más reciente al más antiguo (created_at DESC, id DESC)
+          description: Página de movimientos (solo los que cumplen los filtros; `total` es el de las coincidencias) ordenados del más reciente al más antiguo (created_at DESC, id DESC)
           headers:
             X-Request-Id:
               schema: { type: string }
@@ -187,7 +212,9 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: page no es un entero desde 1 (code `validation`, errors[].field = page)
+          description: >-
+            `validation` si page, from, to o type tienen formato inválido (errors[].field indica cada campo,
+            todos a la vez); `invalid_date_range` si from es posterior a to (HU-10 CA-2).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -225,6 +252,28 @@ paths:
                   db:
                     type: string
                     enum: [error]
+  /api/v1/auth/session:
+    get:
+      operationId: getSession
+      summary: Vencimiento de la sesión; la consulta cuenta como actividad (HU-04)
+      tags: [auth]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Sesión vigente; la cookie se renueva con el nuevo vencimiento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionOut"
+              examples:
+                vigente:
+                  value: { expires_at: "2026-10-14T21:45:00Z" }
+        "401":
+          description: Sin sesión, vencida o revocada (code `invalid_session`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
   /api/v1/auth/login:
     post:
       summary: Iniciar sesión con teléfono y contraseña (HU-02)
@@ -503,6 +552,11 @@ components:
         page: { type: integer, minimum: 1 }
         page_size: { type: integer, enum: [20] }
         total: { type: integer, minimum: 0 }
+    SessionOut:
+      type: object
+      required: [expires_at]
+      properties:
+        expires_at: { type: string, format: date-time }
     LoginIn:
       type: object
       required: [phone, password]

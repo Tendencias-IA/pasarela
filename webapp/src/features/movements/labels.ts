@@ -1,4 +1,5 @@
 import type { Counterparty, MovementOut } from "./api";
+import type { MovementType } from "./filters";
 
 export function directionLabel(direction: MovementOut["direction"]): string {
   switch (direction) {
@@ -26,4 +27,16 @@ export function counterpartyLabel(
       ? counterparty.phone_masked
       : `${counterparty.name_masked} · ${counterparty.phone_masked}`;
   return `${direction === "enviada" ? "a" : "de"} ${who}`;
+}
+
+/** Opciones del filtro de tipo, en el orden de HU-10 CA-3. */
+export const TYPE_OPTIONS: readonly { value: MovementType; label: string }[] = [
+  { value: "all", label: "Todas" },
+  { value: "sent", label: "Transferencias enviadas" },
+  { value: "received", label: "Transferencias recibidas" },
+  { value: "recharge", label: "Recargas" },
+];
+
+export function typeLabel(type: MovementType): string {
+  return TYPE_OPTIONS.find((option) => option.value === type)?.label ?? "Todas";
 }

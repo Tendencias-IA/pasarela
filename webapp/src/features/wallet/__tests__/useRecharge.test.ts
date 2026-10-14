@@ -6,8 +6,8 @@ import { setSessionExpiredHandler } from "../../../shared/api/client";
 import { renderHookWithProviders as renderHook } from "../../../test/render";
 import { server } from "../../../test/server";
 import { useMovements } from "../../movements/useMovements";
-import { FORMAT_MESSAGE, RANGE_MESSAGE, useRecharge } from "../useRecharge";
 import { useWallet } from "../useWallet";
+import { FORMAT_MESSAGE, RANGE_MESSAGE, useRecharge } from "../useRecharge";
 
 const URL = "/api/v1/wallet/recharges";
 
@@ -247,7 +247,10 @@ describe("useRecharge (HU-08)", () => {
         return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 });
       }),
     );
-    const { result } = renderHook(() => ({ recharge: useRecharge(), movements: useMovements(1) }));
+    const { result } = renderHook(() => ({
+      recharge: useRecharge(),
+      movements: useMovements({ page: 1, from: "", to: "", type: "all" }),
+    }));
     await waitFor(() => {
       expect(result.current.movements.data).toBeDefined();
     });
@@ -263,20 +266,19 @@ describe("useRecharge (HU-08)", () => {
     });
   });
 
-  it("invalida la query de saldo tras una recarga exitosa (HU-05 CA-3, webapp.md)", async () => {
+  it("invalida también el saldo tras una recarga exitosa (HU-05 CA-3)", async () => {
     let walletRequests = 0;
     server.use(
       http.post(URL, () => okResponse("50000.00", "50000.00")),
       http.get("/api/v1/wallet", () => {
         walletRequests += 1;
-        return HttpResponse.json({ balance: "0.00" });
+        return HttpResponse.json({ balance: walletRequests === 1 ? "0.00" : "50000.00" });
       }),
     );
     const { result } = renderHook(() => ({ recharge: useRecharge(), wallet: useWallet() }));
     await waitFor(() => {
-      expect(result.current.wallet.data).toBeDefined();
+      expect(result.current.wallet.data?.balance).toBe("0.00");
     });
-    expect(walletRequests).toBe(1);
 
     act(() => {
       result.current.recharge.setAmount("50000");
@@ -284,7 +286,7 @@ describe("useRecharge (HU-08)", () => {
     await act(() => result.current.recharge.submit());
 
     await waitFor(() => {
-      expect(walletRequests).toBe(2);
+      expect(result.current.wallet.data?.balance).toBe("50000.00");
     });
   });
 });

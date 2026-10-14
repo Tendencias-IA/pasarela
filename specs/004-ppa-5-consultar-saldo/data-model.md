@@ -21,9 +21,9 @@ HU-08) a través del repositorio del módulo `wallet`.
 
 ## Entidades de dominio y contrato
 
-- Servicio: `get_balance(user_id: int, repo=default_repository) -> Decimal`. Sin
+- Servicio: `get_balance(user_id: int, repo=default_repository) -> WalletBalance`. Sin
   dataclass intermedia: un solo valor.
-- Salida: `WalletOut(balance: str)` construida con `WalletOut.from_balance(Decimal)` →
+- Salida: `WalletOut(balance: str)` construida con `WalletOut.from_balance(WalletBalance)` →
   `{"balance": to_json(balance)}`.
 - Webapp: `WalletOut` generado en `types.gen.ts`; `useWallet()` expone
   `data.balance` (cadena) que `formatCOP` convierte en `$ 150.000,00`.

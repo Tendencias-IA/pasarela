@@ -13,7 +13,7 @@ from flask import Flask
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.extensions import db
 from app.modules.movements import service
-from app.modules.movements.repository import SqlMovementsRepository
+from app.modules.movements.repository import MovementsFilter, SqlMovementsRepository
 from app.modules.movements.schemas import MovementsPageOut
 from app.modules.movements.service import Direction
 from app.modules.wallet import service as wallet_service
@@ -137,7 +137,7 @@ def test_forty_five_movements_paginate_without_gaps_or_duplicates(
     keys = [(m.created_at, m.id) for p in pages for m in p.items]
     assert keys == sorted(keys, reverse=True)
     assert service.list_movements(1, 9).items == []
-    assert SqlMovementsRepository().count_for_wallet(a) == 45
+    assert SqlMovementsRepository().count_for_wallet(a, MovementsFilter()) == 45
 
 
 def test_user_without_movements_or_wallet_gets_empty_page(

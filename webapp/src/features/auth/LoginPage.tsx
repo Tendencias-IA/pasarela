@@ -7,7 +7,8 @@ import {
   IonTitle,
   IonToolbar,
 } from "@ionic/react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "./auth.css";
 import { useLogin } from "./useLogin";
@@ -17,6 +18,9 @@ const PHONE_PATTERN = /^3[0-9]{9}$/;
 /** HU-02: iniciar sesión con teléfono y contraseña. Diseño del equipo (pantalla Iniciar sesión). */
 export function LoginPage() {
   const { state, submit } = useLogin();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const expired = params.get("motivo") === "expirada";
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [formatError, setFormatError] = useState<string | null>(null);
@@ -33,6 +37,13 @@ export function LoginPage() {
     setFormatError(null);
     submit({ phone, password });
   };
+
+  // Sesión iniciada: al panel (el historial del navegador no vuelve al formulario).
+  useEffect(() => {
+    if (state.kind === "success") {
+      navigate("/", { replace: true });
+    }
+  }, [state.kind, navigate]);
 
   const errorMessage = formatError ?? (state.kind === "error" ? state.message : null);
   const pending = state.kind === "pending";
@@ -94,6 +105,11 @@ export function LoginPage() {
                 }}
               />
 
+              {expired && state.kind === "idle" && (
+                <p role="status" className="auth-notice">
+                  Tu sesión expiró. Inicia sesión de nuevo.
+                </p>
+              )}
               {errorMessage && (
                 <p role="alert" className="auth-error">
                   {errorMessage}

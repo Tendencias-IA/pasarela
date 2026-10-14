@@ -97,7 +97,6 @@ webapp/
 │   ├── shared/api/types.gen.ts          # regenerado con npm run api:types
 │   └── test/server.ts                   # + handler por defecto GET /api/v1/wallet
 └── e2e/
-    ├── pages/home.page.ts               # NUEVO
     ├── hu-05-consultar-saldo.spec.ts    # NUEVO
     └── smoke.spec.ts                    # inicia sesión antes de abrir "/" (ahora es privada)
 ```
@@ -134,3 +133,18 @@ Ver [research.md](research.md). Resumen:
 | Archivos compartidos con otras sesiones (`wallet/service.py`, `openapi.yaml`, `types.gen.ts`, `HomePage.tsx`, `useRecharge.ts`, `smoke.spec.ts`) | Cambios aditivos y pequeños; el orquestador los revisa al fusionar. Listados en el informe final. |
 | HU-07 también debe invalidar `["wallet"]` | `WALLET_QUERY_KEY` exportada desde `features/wallet/useWallet.ts`; se avisa en el PR. |
 | El borrador de moagu quedó en una rama aparte | No se fusiona; se tomaron solo los archivos útiles y se documenta en `spec.md`. |
+
+## Nota de integración (2026-10-14)
+
+La rama integradora `feat/PPA-9-historial-movimientos` ya traía una implementación de HU-05
+(`119688a`) hecha en paralelo. Al integrar se conservó **su código** y de este trabajo quedan
+la carpeta de spec, el test de contrato propio (`tests/contract/test_openapi_wallet.py`) y
+las pruebas de la tarjeta (`HomePage.test.tsx`). Diferencias de implementación respecto a
+lo planeado arriba, sin cambio de comportamiento:
+
+- `get_balance` devuelve `WalletBalance(balance: Decimal)` y `WalletOut.from_balance` la recibe.
+- `useWallet` expone además `isUnavailable` (404 `wallet_not_found`).
+- La tarjeta no tiene botón "Reintentar" ni atributo `data-balance`; el error inesperado
+  dice "No se pudo consultar el saldo. Intenta de nuevo."
+- El spec Playwright de la integradora compara el texto de la tarjeta antes y después de
+  recargar; no se usa un page object `home.page.ts`.

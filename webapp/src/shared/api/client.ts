@@ -12,11 +12,15 @@ export interface RequestOptions {
   body?: unknown;
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /** Con `false` el 401 solo se propaga (lo usa el guardián de rutas, que redirige por su cuenta). */
+  redirectOnUnauthorized?: boolean;
 }
 
 export type SessionExpiredHandler = () => void;
 let onSessionExpired: SessionExpiredHandler = () => {
-  window.location.assign("/login");
+  // HU-04 CA-2: la operación privada exige iniciar sesión de nuevo; el aviso lo muestra
+  // la pantalla de login. Sin bucle si ya se está en /login.
+  if (window.location.pathname !== "/login") window.location.assign("/login?motivo=expirada");
 };
 
 export function setSessionExpiredHandler(handler: SessionExpiredHandler): void {
@@ -40,7 +44,13 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   if (!response.ok) {
     const error = await toApiError(response);
-    if (error.status === 401 && error.code === "invalid_session") onSessionExpired();
+    if (
+      error.status === 401 &&
+      error.code === "invalid_session" &&
+      options.redirectOnUnauthorized !== false
+    ) {
+      onSessionExpired();
+    }
     throw error;
   }
   if (response.status === 204) return undefined as T;
