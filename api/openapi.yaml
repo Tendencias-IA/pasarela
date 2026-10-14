@@ -33,6 +33,35 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "404":
           description: La cuenta no tiene billetera (code `wallet_not_found`)
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Revocar la sesión activa (HU-03)
+      tags: [auth]
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema: { type: string, enum: [fetch] }
+      responses:
+        "204":
+          description: Sesión revocada, sin cuerpo; cookie eliminada.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, enum: [no-store] }
+        "401":
+          description: Sin sesión válida
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Falta X-Requested-With
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }

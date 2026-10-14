@@ -130,3 +130,13 @@ def touch_session(session: Session) -> datetime:
         session.last_activity_at = now
         session.expires_at = expires_at
     return expires_at
+
+
+def logout(token: str | None) -> None:
+    """HU-03 CA-1/CA-4: revoca únicamente la sesión activa, sin modificar la cuenta."""
+    with transaction():
+        session = get_current_session(token)
+        if session is None or not repository.revoke_session(session.id, utcnow()):
+            raise InvalidSessionError("Inicia sesión para continuar.")
+        user_id = session.user_id
+    log.info("auth.logout", extra={"user_id": user_id})

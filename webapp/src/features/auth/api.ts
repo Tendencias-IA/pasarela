@@ -17,3 +17,12 @@ export type SessionOut = components["schemas"]["SessionOut"];
 export function getSession(signal?: AbortSignal) {
   return request<SessionOut>("/api/v1/auth/session", { signal, redirectOnUnauthorized: false });
 }
+
+/** POST /api/v1/auth/logout (HU-03): revoca la sesión activa; 204 sin cuerpo y cookie borrada. */
+export async function logout(signal?: AbortSignal): Promise<void> {
+  await request<undefined>("/api/v1/auth/logout", {
+    method: "POST",
+    signal,
+    redirectOnUnauthorized: false,
+  });
+}

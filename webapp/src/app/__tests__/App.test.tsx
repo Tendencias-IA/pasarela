@@ -67,4 +67,23 @@ describe("App (panel inicial)", () => {
 
     expect(await screen.findByText("Saldo no disponible")).toBeInTheDocument();
   });
+
+  it("sin sesión no renderiza el menú lateral, solo con sesión iniciada (HU-04 CA-2)", async () => {
+    server.use(
+      http.get("/api/v1/auth/session", () =>
+        HttpResponse.json(
+          { type: "t", title: "Sesión", status: 401, code: "invalid_session" },
+          { status: 401, headers: { "Content-Type": "application/problem+json" } },
+        ),
+      ),
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/login");
+    });
+    expect(document.querySelector("ion-menu")).toBeNull();
+    expect(screen.queryByText("Cerrar sesión")).not.toBeInTheDocument();
+  });
 });

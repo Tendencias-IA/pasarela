@@ -72,3 +72,20 @@ def renew_session_cookie(response: Response) -> Response:
             max_age=int(current_app.config["SESSION_IDLE"].total_seconds()),
         )
     return response
+
+
+@bp.post("/logout")
+@login_required
+def logout() -> Response:
+    service.logout(request.cookies.get(SESSION_COOKIE_NAME))
+    # HU-04 renueva la cookie en cada respuesta con sesión válida; aquí la sesión acaba de
+    # revocarse y la cookie debe quedar borrada (HU-03 CA-1), no renovada.
+    g.pop("session_expires_at", None)
+    response = current_app.make_response(("", 204))
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        httponly=True,
+        samesite="Lax",
+        secure=current_app.config["SESSION_COOKIE_SECURE"],
+    )
+    return response
