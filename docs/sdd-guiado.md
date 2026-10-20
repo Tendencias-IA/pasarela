@@ -38,14 +38,15 @@ Si falta el ticket, el agente pregunta cuál antes de hacer nada.
 
 ## Modelo recomendado por fase
 
-| Fase | Modelo | Razón |
-| --- | --- | --- |
-| 0 Ticket, 1 Especificar, 2 Aclarar, 4 Tareas, 6 Cierre | el más económico de la familia (Sonnet en Claude) | Lectura, redacción y listas: no exige el modelo más caro |
-| 3 Planificar | el intermedio (Opus en Claude) | Hay alternativas de diseño que comparar |
-| 5 Implementar | el intermedio; **el más potente** (Fable en Claude) si la historia mueve dinero, bloquea filas o hay concurrencia | El coste de un error silencioso en dinero es el mayor del proyecto (constitución V) |
+| Fase | Nivel | Claude Code | Codex | Razón |
+| --- | --- | --- | --- | --- |
+| 0 Ticket, 1 Especificar, 2 Aclarar, 4 Tareas, 6 Cierre | económico | Sonnet (`claude-sonnet-5-5`) | `gpt-5.4-mini` | Lectura, redacción y listas: no exige el modelo más caro |
+| 3 Planificar | intermedio | Opus (`claude-opus-5-5`) | `gpt-5.3-codex` | Hay alternativas de diseño que comparar |
+| 5 Implementar | intermedio; **el más potente** si la historia mueve dinero, bloquea filas o hay concurrencia | Opus; Fable (`claude-fable-5-1`) | `gpt-5.3-codex`; `gpt-5.5` | El coste de un error silencioso en dinero es el mayor del proyecto (constitución V) |
 
-En Codex u otra herramienta se aplica la misma escala con sus modelos. La persona puede
-elegir otro; se respeta y se anota.
+Los nombres de Codex son los vigentes a mitad de 2026 y cambian con frecuencia: `/model` en
+Codex lista los disponibles; si alguno ya no existe, se usa el de su mismo nivel y se anota en
+la bitácora. La persona puede elegir otro modelo; se respeta y se anota.
 
 ## Fases y puertas
 
