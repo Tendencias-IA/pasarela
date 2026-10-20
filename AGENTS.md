@@ -102,4 +102,5 @@ docker compose --profile app up --build
 - Hacer `git add`, `git commit`, `git push`, abrir un PR o cambiar un ticket de Jira sin que
   la persona lo pida. Los cambios se dejan sin stage en el árbol de trabajo para que la
   persona los revise en el control de versiones antes de confirmarlos (ver
-  `git-workflow.md`).
+  `git-workflow.md`). En `/sdd`, aprobar una puerta
+  equivale a pedir `git add` de lo aprobado (`docs/sdd-guiado.md`, regla 6).

@@ -1,7 +1,8 @@
 # Bitácora de decisiones: [HU-nn Título] (PPA-n)
 
 Evidencia del trabajo guiado con `/sdd`: cada puerta, quién decidió y con qué modelo se
-trabajó la fase. Se escribe en el momento de decidir; nunca se reescribe una entrada.
+trabajó la fase. Se escribe en el momento de decidir; nunca se reescribe una entrada. Lo aprobado en cada
+puerta pasa a stage en ese mismo momento (`docs/sdd-guiado.md`, regla 6).
 
 **Rama**: `feat/PPA-n-slug` · **Personas**: [nombres] · **Inicio**: [fecha]
 

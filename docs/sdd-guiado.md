@@ -32,9 +32,15 @@ Si falta el ticket, el agente pregunta cuál antes de hacer nada.
 4. **Bitácora obligatoria** en `specs/NNN-ppa-n-slug/decisiones.md` (plantilla en
    `.specify/templates/decisiones-template.md`). La entrada se escribe **en el mismo turno**
    en que la persona decide, nunca después.
-5. **Git y Jira solo por decisión en puerta**: sin `git add`, `commit`, `push`, PR ni cambios
-   de ticket que la persona no haya elegido en una puerta (`.claude/rules/git-workflow.md`).
-6. Todo lo demás es lo que ya dicen `AGENTS.md`, la constitución y `.claude/rules/`.
+5. **Git y Jira solo por decisión en puerta**: sin `commit`, `push`, PR ni cambios de ticket
+   que la persona no haya elegido en una puerta (`.claude/rules/git-workflow.md`).
+6. **Stage = aprobado.** Al aprobarse una puerta, el agente pasa a stage (`git add`) solo los
+   archivos, o las partes de archivo, que esa puerta aprobó; lo producido después queda como
+   cambios sin stage hasta su propia puerta. Así el control de versiones muestra en todo
+   momento qué revisó y aprobó la persona ("Staged") y qué falta por aprobar ("Changes"). Si
+   un archivo mezcla partes aprobadas y pendientes, solo la parte aprobada va a stage. El agente
+   nunca hace `git add .` ni quita del stage algo aprobado sin decirlo en una puerta.
+7. Todo lo demás es lo que ya dicen `AGENTS.md`, la constitución y `.claude/rules/`.
 
 ## Modelo recomendado por fase
 
@@ -99,7 +105,8 @@ bitácora.
    exige la constitución.
 3. **Puerta 5.x** al cerrar cada fase: resumen de lo hecho, validadores ejecutados y su
    resultado, y dudas. Opciones: continuar con la siguiente fase, ajustar algo antes, parar
-   aquí. Si la fase tocó archivos ajenos a la historia, decirlo en la puerta.
+   aquí. Si la fase tocó archivos ajenos a la historia, decirlo en la puerta. Si se aprueba, lo
+   de esa fase pasa a stage (regla 6) antes de empezar la siguiente.
 
 ### Fase 6. Cierre
 
@@ -107,7 +114,8 @@ bitácora.
 2. Correr los validadores completos (`api`: ruff, mypy, pytest; `webapp`: lint, typecheck,
    test, build; `e2e` si hubo cambios de pantalla) y una revisión de código del diff.
 3. **Puerta 6**: resultados y hallazgos. Opciones: corregir hallazgos, commit por tarea,
-   commit único, push y PR, dejar sin confirmar. Solo se ejecuta lo elegido.
+   commit único, push y PR, dejar sin confirmar. Solo se ejecuta lo elegido; el commit toma
+   exactamente lo que está en stage, es decir, lo aprobado.
 4. Cerrar la bitácora con el resumen: fases, modelos usados, decisiones, qué quedó fuera.
 
 ## Retomar (`continuar`)

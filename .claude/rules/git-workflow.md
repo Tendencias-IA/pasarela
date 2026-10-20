@@ -26,6 +26,10 @@ ella sale producción. Ambientes: local y producción.
   ejecuta `git add`, `git commit` ni `git push` por su cuenta. Razón: el autor firma el
   commit y responde por él; revisar después de confirmar invierte el orden y deja
   commits que nadie leyó.
+- Excepción en el flujo guiado `/sdd` (`docs/sdd-guiado.md`, regla 6): aprobar una puerta
+  equivale a pedir `git add` de lo que esa puerta aprobó, y solo de eso. Así "Staged" es lo
+  aprobado y "Changes" lo pendiente; nunca `git add .`. El commit y el push siguen exigiendo
+  su propia decisión en la puerta de cierre.
 - Formato de una línea: `type(PPA-n): descripción en minúscula e imperativo`, máximo
   72 caracteres. Varios tickets: `fix(PPA-6, PPA-7): ...`. Cambio incompatible:
   `feat(PPA-n)!: ...`.
