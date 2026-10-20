@@ -31,7 +31,8 @@ Si falta el ticket, el agente pregunta cuál antes de hacer nada.
    la fase se anota en la bitácora. El agente no cambia su propio modelo.
 4. **Bitácora obligatoria** en `specs/NNN-ppa-n-slug/decisiones.md` (plantilla en
    `.specify/templates/decisiones-template.md`). La entrada se escribe **en el mismo turno**
-   en que la persona decide, nunca después.
+   en que la persona decide, nunca después. Cada entrada indica también la siguiente acción
+   autorizada y la fase o subfase exacta; si falta una respuesta, se registra la puerta pendiente.
 5. **Git y Jira solo por decisión en puerta**: sin `commit`, `push`, PR ni cambios de ticket
    que la persona no haya elegido en una puerta (`.claude/rules/git-workflow.md`).
 6. **Stage = aprobado.** Al aprobarse una puerta, el agente pasa a stage (`git add`) solo los
@@ -64,15 +65,20 @@ la bitácora. La persona puede elegir otro modelo; se respeta y se anota.
 2. Revisar en `specs/` y en el código si ya existe trabajo previo de la HU y decirlo.
 3. **Puerta 0**: ¿tomamos el ticket? Opciones: tomarlo (asignar y pasar a In Progress),
    tomarlo sin tocar Jira, esperar a una dependencia, no tomarlo.
-4. Crear la bitácora con la entrada de la puerta 0 y el nombre de la rama propuesta
-   (`feat/PPA-n-<slug>`); la rama se crea solo si la persona lo decidió.
+4. Si la persona toma el ticket, reutilizar la carpeta de la HU si ya existe. Para una HU
+   nueva, elegir y anunciar el siguiente número libre **una sola vez**, crear
+   `specs/NNN-ppa-n-slug/` y registrar esa ruta en la bitácora junto con la entrada de la
+   puerta 0. Si decide esperar o no tomarlo, detenerse sin crear una carpeta nueva.
+5. Registrar el nombre de la rama propuesta (`feat/PPA-n-<slug>`); la rama se crea solo si
+   la persona lo decidió. Todos los pasos siguientes usan la misma carpeta de la HU.
 
 ### Fase 1. Especificar
 
 1. Anunciar el modelo y esperar confirmación.
 2. Ejecutar el comando de especificar de Spec Kit (`/speckit-specify` en Claude,
-   `$speckit-specify` en Codex) con la carpeta `specs/NNN-ppa-n-slug`
-   (NNN = siguiente número libre; decirlo explícitamente).
+   `$speckit-specify` en Codex) pasando explícitamente `SPECIFY_FEATURE_DIRECTORY` con la
+   ruta registrada en la puerta 0. No recalcular NNN ni crear otra carpeta: `spec.md`,
+   `plan.md`, `tasks.md` y `decisiones.md` pertenecen a esa misma ruta.
 3. **Puerta 1**: presentar las historias de usuario priorizadas, las suposiciones y lo que
    quedó fuera de alcance. Opciones: aprobar, cambiar prioridades, añadir o quitar alcance,
    pasar por aclarar.
@@ -85,10 +91,19 @@ bitácora.
 ### Fase 3. Planificar
 
 1. Anunciar el modelo y esperar confirmación.
-2. Ejecutar el comando de planificar de Spec Kit. Antes de escribir `research.md`, listar las
-   decisiones técnicas abiertas (máximo 5) con sus alternativas.
-3. **Puerta 3**: una pregunta por decisión abierta. Las respuestas se escriben en
-   `research.md` como "Decisión" y en la bitácora.
+2. Antes de ejecutar el comando de planificar, leer la spec y las reglas aplicables,
+   investigar y listar las decisiones técnicas abiertas (máximo 5), con sus alternativas
+   y una recomendación. No generar todavía `research.md`, el plan, el modelo de datos ni
+   los contratos que dependan de esas decisiones.
+3. **Puerta 3.a**: una pregunta por decisión abierta. Esperar cada respuesta y registrarla
+   en la bitácora; no resolver las restantes por cuenta propia. Si no hay decisiones
+   abiertas, pedir confirmación para generar el plan con las convenciones existentes.
+4. En un turno posterior, con todas las decisiones respondidas, ejecutar el comando de
+   planificar de Spec Kit pasando esas decisiones como restricciones. Escribirlas en
+   `research.md` como "Decisión" y generar los artefactos de diseño de acuerdo con ellas.
+   Si aparece una decisión abierta nueva, detenerse y volver a la puerta 3.a.
+5. **Puerta 3.b**: presentar el plan y los artefactos resultantes. Opciones: aprobar el plan
+   y pasar a tareas, pedir ajustes, parar aquí. Solo lo aprobado pasa a stage (regla 6).
 
 ### Fase 4. Tareas
 
@@ -120,8 +135,19 @@ bitácora.
 
 ## Retomar (`continuar`)
 
-Leer `decisiones.md`, decir en qué puerta quedó y continuar desde la fase siguiente,
-repitiendo el anuncio de modelo.
+1. Localizar la carpeta registrada para la HU y leer `decisiones.md` y los artefactos
+   existentes; si hay `tasks.md`, comprobar también sus tareas pendientes.
+2. Decir cuál fue la última decisión y qué acción quedó autorizada. No avanzar solo por el
+   número de la última fase registrada:
+   - Si falta una respuesta, volver a presentar esa puerta y esperar.
+   - Si se pidió ajustar, retomar esos ajustes y volver a abrir la misma puerta.
+   - Si se decidió parar o esperar, pedir una nueva decisión para reanudar antes de trabajar.
+   - Si se aprobó continuar, ejecutar únicamente la siguiente acción autorizada. En la fase
+     5, retomar la primera subfase pendiente de `tasks.md`, no saltar al cierre; si hay trabajo
+     hecho sin aprobación, presentar primero su puerta 5.x. Pasar a la fase 6 solo cuando
+     todas las subfases estén completadas y aprobadas.
+3. Si la bitácora y las tareas no permiten determinar ese estado, pedir aclaración antes de
+   ejecutar. Repetir el anuncio de modelo al entrar en la fase que corresponda.
 
 ## Qué no hacer
 
