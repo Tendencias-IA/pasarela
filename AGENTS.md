@@ -42,6 +42,12 @@ El ciclo, en orden, con los comandos de Spec Kit instalados en `.claude/skills/`
 
 Guía paso a paso con ejemplo: `docs/sdd-workflow.md`.
 
+Para trabajar una historia **en conjunto con la persona**, con una puerta de decisión por fase,
+modelo recomendado por fase y bitácora de decisiones, se usa `/sdd PPA-n`; el procedimiento,
+válido para cualquier agente, está en `docs/sdd-guiado.md`. Los comandos existen para Claude Code
+(`.claude/skills/`, se invocan con `/`) y para Codex (`.agents/skills/`, se invocan con `$`); cada
+persona usa el agente que prefiera sobre el mismo repositorio.
+
 ## Comandos
 
 ```bash
@@ -96,4 +102,5 @@ docker compose --profile app up --build
 - Hacer `git add`, `git commit`, `git push`, abrir un PR o cambiar un ticket de Jira sin que
   la persona lo pida. Los cambios se dejan sin stage en el árbol de trabajo para que la
   persona los revise en el control de versiones antes de confirmarlos (ver
-  `git-workflow.md`).
+  `git-workflow.md`). En `/sdd`, aprobar una puerta
+  equivale a pedir `git add` de lo aprobado (`docs/sdd-guiado.md`, regla 6).

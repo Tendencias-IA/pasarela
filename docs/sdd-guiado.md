@@ -1,0 +1,168 @@
+# Trabajo guiado con `/sdd`: puertas de decisión y bitácora
+
+Procedimiento para trabajar una historia de Jira (PPA-n) **en conjunto** entre una persona y
+un agente de IA, cualquiera que sea (Claude Code, Codex u otro). El agente prepara y propone;
+la persona decide en cada **puerta**; cada decisión queda en una **bitácora** que es la
+evidencia del trabajo controlado. Envuelve el ciclo SDD de `docs/sdd-workflow.md`.
+
+Este documento es la única fuente de verdad. Los adaptadores por agente
+(`.claude/skills/sdd/SKILL.md`, `.agents/skills/sdd/SKILL.md`) solo lo cargan y añaden lo
+específico de su herramienta.
+
+## Entrada
+
+```text
+/sdd PPA-n            # empieza desde el ticket
+/sdd PPA-n continuar  # retoma donde dice la bitácora
+```
+
+Si falta el ticket, el agente pregunta cuál antes de hacer nada.
+
+## Reglas que no se negocian
+
+1. **Ninguna puerta se pasa sin respuesta explícita de la persona.** El agente presenta la
+   decisión como una pregunta cerrada con 2 a 4 opciones concretas (una marcada como
+   recomendada) y espera. Una respuesta libre de la persona vale como decisión.
+2. **Una fase por turno.** El agente termina la fase, abre la puerta y para. No encadena la
+   siguiente fase en el mismo turno aunque "sea obvia".
+3. **Modelo por fase.** Al entrar en cada fase el agente anuncia el modelo recomendado
+   (tabla de abajo) y por qué, pide a la persona que lo cambie en su herramienta (o que diga
+   "sigo con este") y espera la confirmación antes de trabajar. El modelo con el que se hizo
+   la fase se anota en la bitácora. El agente no cambia su propio modelo.
+4. **Bitácora obligatoria** en `specs/NNN-ppa-n-slug/decisiones.md` (plantilla en
+   `.specify/templates/decisiones-template.md`). La entrada se escribe **en el mismo turno**
+   en que la persona decide, nunca después. Cada entrada indica también la siguiente acción
+   autorizada y la fase o subfase exacta; si falta una respuesta, se registra la puerta pendiente.
+5. **Git y Jira solo por decisión en puerta**: sin `commit`, `push`, PR ni cambios de ticket
+   que la persona no haya elegido en una puerta (`.claude/rules/git-workflow.md`).
+6. **Stage = aprobado.** Al aprobarse una puerta, el agente pasa a stage (`git add`) solo los
+   archivos, o las partes de archivo, que esa puerta aprobó; lo producido después queda como
+   cambios sin stage hasta su propia puerta. Así el control de versiones muestra en todo
+   momento qué revisó y aprobó la persona ("Staged") y qué falta por aprobar ("Changes"). Si
+   un archivo mezcla partes aprobadas y pendientes, solo la parte aprobada va a stage. El agente
+   nunca hace `git add .` ni quita del stage algo aprobado sin decirlo en una puerta.
+7. Todo lo demás es lo que ya dicen `AGENTS.md`, la constitución y `.claude/rules/`.
+
+## Modelo recomendado por fase
+
+| Fase | Nivel | Claude Code | Codex | Razón |
+| --- | --- | --- | --- | --- |
+| 0 Ticket, 1 Especificar, 2 Aclarar, 4 Tareas, 6 Cierre | económico | Sonnet (`claude-sonnet-5-5`) | `gpt-5.4-mini` | Lectura, redacción y listas: no exige el modelo más caro |
+| 3 Planificar | intermedio | Opus (`claude-opus-5-5`) | `gpt-5.3-codex` | Hay alternativas de diseño que comparar |
+| 5 Implementar | intermedio; **el más potente** si la historia mueve dinero, bloquea filas o hay concurrencia | Opus; Fable (`claude-fable-5-1`) | `gpt-5.3-codex`; `gpt-5.5` | El coste de un error silencioso en dinero es el mayor del proyecto (constitución V) |
+
+Los nombres de Codex son los vigentes a mitad de 2026 y cambian con frecuencia: `/model` en
+Codex lista los disponibles; si alguno ya no existe, se usa el de su mismo nivel y se anota en
+la bitácora. La persona puede elegir otro modelo; se respeta y se anota.
+
+## Fases y puertas
+
+### Fase 0. Ticket
+
+1. Leer el ticket en Jira y la sección de la HU en
+   `docs/referencia/requisitos-billetera-v1.0.md`. Resumir en ≤ 10 líneas: objetivo,
+   criterios de aceptación numerados, dependencias (¿están en `main`?), módulo.
+2. Revisar en `specs/` y en el código si ya existe trabajo previo de la HU y decirlo.
+3. **Puerta 0**: ¿tomamos el ticket? Opciones: tomarlo (asignar y pasar a In Progress),
+   tomarlo sin tocar Jira, esperar a una dependencia, no tomarlo.
+4. Si la persona toma el ticket, reutilizar la carpeta de la HU si ya existe. Para una HU
+   nueva, elegir y anunciar el siguiente número libre **una sola vez**, crear
+   `specs/NNN-ppa-n-slug/` y registrar esa ruta en la bitácora junto con la entrada de la
+   puerta 0. Si decide esperar o no tomarlo, detenerse sin crear una carpeta nueva.
+5. Registrar el nombre de la rama propuesta (`feat/PPA-n-<slug>`); la rama se crea solo si
+   la persona lo decidió. Todos los pasos siguientes usan la misma carpeta de la HU.
+
+### Fase 1. Especificar
+
+1. Anunciar el modelo y esperar confirmación.
+2. Ejecutar el comando de especificar de Spec Kit (`/speckit-specify` en Claude,
+   `$speckit-specify` en Codex) pasando explícitamente `SPECIFY_FEATURE_DIRECTORY` con la
+   ruta registrada en la puerta 0. No recalcular NNN ni crear otra carpeta: `spec.md`,
+   `plan.md`, `tasks.md` y `decisiones.md` pertenecen a esa misma ruta.
+3. **Puerta 1**: presentar las historias de usuario priorizadas, las suposiciones y lo que
+   quedó fuera de alcance. Opciones: aprobar, cambiar prioridades, añadir o quitar alcance,
+   pasar por aclarar.
+
+### Fase 2. Aclarar (solo si la puerta 1 lo pidió o hay `NEEDS CLARIFICATION`)
+
+Ejecutar el comando de aclarar de Spec Kit; cada respuesta de la persona es una entrada de
+bitácora.
+
+### Fase 3. Planificar
+
+1. Anunciar el modelo y esperar confirmación.
+2. Antes de ejecutar el comando de planificar, leer la spec y las reglas aplicables,
+   investigar y listar las decisiones técnicas abiertas (máximo 5), con sus alternativas
+   y una recomendación. No generar todavía `research.md`, el plan, el modelo de datos ni
+   los contratos que dependan de esas decisiones.
+3. **Puerta 3.a**: una pregunta por decisión abierta. Esperar cada respuesta y registrarla
+   en la bitácora; no resolver las restantes por cuenta propia. Si no hay decisiones
+   abiertas, pedir confirmación para generar el plan con las convenciones existentes.
+4. En un turno posterior, con todas las decisiones respondidas, ejecutar el comando de
+   planificar de Spec Kit pasando esas decisiones como restricciones. Escribirlas en
+   `research.md` como "Decisión" y generar los artefactos de diseño de acuerdo con ellas.
+   Si aparece una decisión abierta nueva, detenerse y volver a la puerta 3.a.
+5. **Puerta 3.b**: presentar el plan y los artefactos resultantes. Opciones: aprobar el plan
+   y pasar a tareas, pedir ajustes, parar aquí. Solo lo aprobado pasa a stage (regla 6).
+
+### Fase 4. Tareas
+
+1. Anunciar el modelo y esperar confirmación.
+2. Ejecutar el comando de tareas de Spec Kit.
+3. **Puerta 4**: mostrar el conteo por fase y el MVP propuesto. Opciones: aprobar, recortar a
+   MVP, reordenar, añadir tareas.
+
+### Fase 5. Implementar
+
+1. Anunciar el modelo y esperar confirmación.
+2. Ejecutar el comando de implementar de Spec Kit **una fase de `tasks.md` por turno**
+   (Setup, Foundational, cada historia, Polish). Pruebas antes de cada implementación, como
+   exige la constitución.
+3. **Puerta 5.x** al cerrar cada fase: resumen de lo hecho, validadores ejecutados y su
+   resultado, y dudas. Opciones: continuar con la siguiente fase, ajustar algo antes, parar
+   aquí. Si la fase tocó archivos ajenos a la historia, decirlo en la puerta. Si se aprueba, lo
+   de esa fase pasa a stage (regla 6) antes de empezar la siguiente.
+
+### Fase 6. Cierre
+
+1. Anunciar el modelo y esperar confirmación.
+2. Correr los validadores completos (`api`: ruff, mypy, pytest; `webapp`: lint, typecheck,
+   test, build; `e2e` si hubo cambios de pantalla) y una revisión de código del diff.
+3. **Puerta 6**: resultados y hallazgos. Opciones: corregir hallazgos, commit por tarea,
+   commit único, push y PR, dejar sin confirmar. Solo se ejecuta lo elegido; el commit toma
+   exactamente lo que está en stage, es decir, lo aprobado.
+4. Cerrar la bitácora con el resumen: fases, modelos usados, decisiones, qué quedó fuera.
+
+## Retomar (`continuar`)
+
+1. Localizar la carpeta registrada para la HU y leer `decisiones.md` y los artefactos
+   existentes; si hay `tasks.md`, comprobar también sus tareas pendientes.
+2. Decir cuál fue la última decisión y qué acción quedó autorizada. No avanzar solo por el
+   número de la última fase registrada:
+   - Si falta una respuesta, volver a presentar esa puerta y esperar.
+   - Si se pidió ajustar, retomar esos ajustes y volver a abrir la misma puerta.
+   - Si se decidió parar o esperar, pedir una nueva decisión para reanudar antes de trabajar.
+   - Si se aprobó continuar, ejecutar únicamente la siguiente acción autorizada. En la fase
+     5, retomar la primera subfase pendiente de `tasks.md`, no saltar al cierre; si hay trabajo
+     hecho sin aprobación, presentar primero su puerta 5.x. Pasar a la fase 6 solo cuando
+     todas las subfases estén completadas y aprobadas.
+3. Si la bitácora y las tareas no permiten determinar ese estado, pedir aclaración antes de
+   ejecutar. Repetir el anuncio de modelo al entrar en la fase que corresponda.
+
+## Qué no hacer
+
+- No decidir por la persona "para avanzar": si no responde, no se avanza.
+- No resumir varias puertas en una sola pregunta.
+- No borrar ni reescribir entradas de la bitácora; si una decisión cambia, se añade una
+  entrada nueva que lo dice.
+
+## Instalación por agente
+
+- **Claude Code**: `.claude/skills/sdd/SKILL.md` ya está en el repo; se invoca con `/sdd PPA-n`.
+  Los comandos `/speckit-*` están en `.claude/skills/`.
+- **Codex**: `.agents/skills/sdd/SKILL.md` ya está en el repo, junto con los comandos de Spec
+  Kit como skills (`.agents/skills/speckit-*/`, generados con
+  `specify init --here --integration codex --integration-options="--skills"`); se invocan
+  con `$sdd PPA-n` y `$speckit-specify`, `$speckit-plan`, etc.
+- **Otro agente**: dale este documento como instrucción y usa los comandos de Spec Kit de tu
+  herramienta (`specify init --here --ai <agente>`).

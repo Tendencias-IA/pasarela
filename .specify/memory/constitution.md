@@ -1,7 +1,7 @@
 # Constitución de la Billetera Digital (Pasarela)
 
-Documento raíz del proyecto. Spec Kit lo inyecta en `/speckit-specify`, `/speckit-plan` y
-`/speckit-tasks`; todo plan debe pasar el **Constitution Check** contra estos principios.
+Documento raíz del proyecto. Spec Kit lo inyecta en `speckit-specify`, `speckit-plan` y
+`speckit-tasks` (en Claude Code se invocan con `/`, en Codex con `$`); todo plan debe pasar el **Constitution Check** contra estos principios.
 Las reglas detalladas viven en `.claude/rules/`; esta constitución fija lo innegociable.
 
 Fuente de negocio: `docs/referencia/requisitos-billetera-v1.0.md` (RF-01 a RF-07,
@@ -88,10 +88,10 @@ sin contexto en seis meses, incluida la herramienta de IA del siguiente ticket.
 
 ## Flujo de desarrollo y gates de calidad
 
-1. Tomar el ticket PPA-n en Jira y crear la rama con `/speckit-specify` (ver
+1. Tomar el ticket PPA-n en Jira y crear la rama con `speckit-specify` (ver
    `docs/sdd-workflow.md`).
-2. `spec.md` → `/speckit-clarify` si hay dudas → `plan.md` con Constitution Check →
-   `tasks.md` → `/speckit-implement`.
+2. `spec.md` → `speckit-clarify` si hay dudas → `plan.md` con Constitution Check →
+   `tasks.md` → `speckit-implement`.
 3. Un commit por tarea o grupo lógico, con formato `type(PPA-n): descripción`.
 4. PR hacia `main` con la plantilla de `.github/PULL_REQUEST_TEMPLATE.md`, diff menor a
    400 líneas significativas, al menos una aprobación y CI verde.

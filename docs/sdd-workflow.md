@@ -4,10 +4,22 @@ Para cualquier persona del equipo, con Claude Code abierto en la raíz del repo.
 ciclo completo para una historia toma una sesión; cada paso produce un archivo que el
 siguiente paso consume. Si un paso no produce su archivo, no se avanza.
 
+> **Nota de invocación**: los comandos se escriben aquí como `/speckit-x`, que es la forma de
+> Claude Code. En Codex son los mismos con `$`: `$speckit-x` y `$sdd`.
+
+## Trabajo guiado con `/sdd`
+
+`/sdd PPA-n` recorre estos mismos pasos pero **se detiene en cada puerta** para que la
+persona decida (tomar el ticket, aprobar la spec, elegir entre alternativas de diseño,
+recortar tareas, continuar tras cada fase de implementación, cerrar). Recomienda el modelo
+por fase (Sonnet para leer y redactar, Opus para planificar, Fable cuando hay dinero o
+concurrencia) y deja la bitácora `specs/NNN-ppa-n-slug/decisiones.md` como evidencia del
+trabajo controlado. Procedimiento completo, válido para Claude y Codex: `docs/sdd-guiado.md`.
+
 ## Antes de empezar (una sola vez)
 
 1. Instala Claude Code y, opcionalmente, la CLI de Spec Kit (`uv tool install
-   specify-cli --from git+https://github.com/github/spec-kit.git`). No hace falta
+specify-cli --from git+https://github.com/github/spec-kit.git`). No hace falta
    ejecutar `specify init`: el repo ya está inicializado.
 2. Clona el repo y abre Claude Code en la raíz. Verifica que al escribir `/speckit`
    aparecen los comandos `speckit-specify`, `speckit-plan`, `speckit-tasks`,
@@ -98,10 +110,10 @@ La IA ejecuta las tareas en orden. Tu trabajo es revisar, no mirar:
 
 - Después de cada grupo de tareas, corre los comandos de `AGENTS.md` y lee el diff.
 - Haz un commit por tarea o grupo lógico: `feat(PPA-6): validar rango de monto al
-  preparar transferencia`. Tú haces el commit, no la IA, y solo después de leer el diff
+preparar transferencia`. Tú haces el commit, no la IA, y solo después de leer el diff
   en el panel de control de versiones o con `git diff`; la IA deja todo sin `git add`.
 - Si la IA se sale de las reglas (un `float`, SQL en una ruta, un `except Exception:
-  pass`), no lo corrijas a mano en silencio: díselo citando la regla, para que corrija el
+pass`), no lo corrijas a mano en silencio: díselo citando la regla, para que corrija el
   patrón y no solo la línea.
 
 ## Paso 6. Verificar y abrir el PR
@@ -122,14 +134,14 @@ git log --oneline main..HEAD
 
 ## Si algo sale mal
 
-| Síntoma | Qué hacer |
-| --- | --- |
-| `/speckit-specify` no encuentra la constitución | Estás fuera de la raíz del repo o falta `.specify/`. Vuelve a clonar. |
-| El plan propone hexagonal, colas o un microservicio | Rechaza el plan y cita ADR-0001; vuelve a correr `/speckit-plan` con la restricción explícita. |
-| La cobertura queda en 85 % | No excluyas archivos. Pide a la IA tests unitarios de servicio para las ramas sin cubrir (`pytest --cov-report=term-missing` las lista). |
-| Sonar reporta un hotspot | Revísalo en Sonar y márcalo como seguro solo si puedes explicar por qué en el PR. |
-| El spec de Playwright es inestable | Suele ser un selector por texto cambiante o una espera implícita. Usa roles y `expect(...).toBeVisible()`. |
-| La IA "completó" funcionalidad que no está en la HU | Bórrala. Si crees que hace falta, propón el cambio en el documento de requisitos y en Jira. |
+| Síntoma                                             | Qué hacer                                                                                                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `/speckit-specify` no encuentra la constitución     | Estás fuera de la raíz del repo o falta `.specify/`. Vuelve a clonar.                                                                    |
+| El plan propone hexagonal, colas o un microservicio | Rechaza el plan y cita ADR-0001; vuelve a correr `/speckit-plan` con la restricción explícita.                                           |
+| La cobertura queda en 85 %                          | No excluyas archivos. Pide a la IA tests unitarios de servicio para las ramas sin cubrir (`pytest --cov-report=term-missing` las lista). |
+| Sonar reporta un hotspot                            | Revísalo en Sonar y márcalo como seguro solo si puedes explicar por qué en el PR.                                                        |
+| El spec de Playwright es inestable                  | Suele ser un selector por texto cambiante o una espera implícita. Usa roles y `expect(...).toBeVisible()`.                               |
+| La IA "completó" funcionalidad que no está en la HU | Bórrala. Si crees que hace falta, propón el cambio en el documento de requisitos y en Jira.                                              |
 
 ## Ejemplo resumido completo (HU-06)
 
