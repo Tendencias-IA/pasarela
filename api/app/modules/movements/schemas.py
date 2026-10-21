@@ -16,7 +16,7 @@ from app.modules.movements.service import Movement, MovementsPage
 PAGE_MESSAGE = "La página debe ser un entero desde 1."
 DATE_MESSAGE = "La fecha debe tener el formato AAAA-MM-DD."
 TYPE_MESSAGE = "El tipo debe ser all, sent, received o recharge."
-_DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+_DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}", re.ASCII)
 
 
 class MovementsQuery(BaseModel):

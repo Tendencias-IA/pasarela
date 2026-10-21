@@ -12,7 +12,7 @@ from app.common.money import AMOUNT_FORMAT_MESSAGE, parse_amount
 from app.common.schemas import StrictInput
 from app.modules.transfers.service import TransferPreview, TransferResult
 
-PHONE_PATTERN = re.compile(r"[3][0-9]{9}")
+PHONE_PATTERN = re.compile(r"3\d{9}", re.ASCII)
 PHONE_MESSAGE = "Debe ser un celular de diez dígitos que empiece por 3."
 
 

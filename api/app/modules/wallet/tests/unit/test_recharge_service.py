@@ -8,6 +8,7 @@ import pytest
 from flask import Flask
 
 from app.common.idempotency import IdempotencyContext
+from app.common.idempotency_store import DuplicateIdempotencyKeyError
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.modules.wallet import service
 from app.modules.wallet.service import AmountOutOfRangeError, WalletNotFoundError
@@ -121,7 +122,7 @@ def test_duplicate_key_race_is_reported_as_in_progress(
 
     repo.add_idempotency_key = boom  # type: ignore[method-assign]
 
-    with pytest.raises(service.DuplicateIdempotencyKeyError):
+    with pytest.raises(DuplicateIdempotencyKeyError):
         service.recharge(1, Decimal("5000.00"), CTX, repo=repo)
 
 

@@ -9,9 +9,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy.exc import IntegrityError
-
 from app.common.errors import AppError, problem_body
+from app.common.idempotency_store import store_response
 from app.common.models.transaction import TransactionStatus, TransactionType
 from app.common.money import RECHARGE_MAX, RECHARGE_MIN, to_json
 from app.extensions import transaction
@@ -61,14 +60,6 @@ class InsufficientBalanceError(AppError):
 
     def __init__(self) -> None:
         super().__init__("El saldo disponible es menor que el monto solicitado.")
-
-
-class DuplicateIdempotencyKeyError(AppError):
-    """Carrera entre dos peticiones con la misma clave; la ruta responde con el replay."""
-
-    status = 409
-    code = "idempotency_key_in_progress"
-    title = "Solicitud en curso"
 
 
 @dataclass(frozen=True)
@@ -203,7 +194,7 @@ def recharge(
                 balance_after=wallet.balance,
                 created_at=movement.created_at,
             )
-            _store_key(repo, user_id, idempotency, 201, result.to_body())
+            store_response(repo, user_id, idempotency, 201, result.to_body())
     except AmountOutOfRangeError as exc:
         _record_rejection(repo, user_id, amount, idempotency, exc, instance, request_id)
         raise
@@ -238,29 +229,10 @@ def _record_rejection(
             receiver_wallet_id=wallet.id,
             rejection_reason=exc.code,
         )
-        _store_key(repo, user_id, idempotency, exc.status, problem_body(exc, instance, request_id))
+        store_response(
+            repo, user_id, idempotency, exc.status, problem_body(exc, instance, request_id)
+        )
     log.info(
         "recharge.rejected",
         extra={"user_id": user_id, "reason": exc.code, "amount": to_json(amount)},
     )
-
-
-def _store_key(
-    repo: WalletRepository,
-    user_id: int,
-    idempotency: IdempotencyContext,
-    status_code: int,
-    body: dict[str, Any],
-) -> None:
-    try:
-        repo.add_idempotency_key(
-            user_id=user_id,
-            key=idempotency.key,
-            request_hash=idempotency.request_hash,
-            status_code=status_code,
-            body=body,
-        )
-    except IntegrityError as exc:
-        # Otra petición con la misma clave ganó la carrera: se deshace todo y la ruta
-        # reproduce la respuesta ganadora.
-        raise DuplicateIdempotencyKeyError("Otra solicitud idéntica está en curso.") from exc

@@ -147,7 +147,7 @@ export function ProfilePage() {
                     rules={{
                       required: "Ingresa el nuevo teléfono.",
                       pattern: {
-                        value: /^3[0-9]{9}$/,
+                        value: /^3\d{9}$/,
                         message: "Usa 10 dígitos, empezando por 3.",
                       },
                     }}

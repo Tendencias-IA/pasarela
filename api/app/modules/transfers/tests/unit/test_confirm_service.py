@@ -8,6 +8,7 @@ import pytest
 from flask import Flask
 
 from app.common.idempotency import IdempotencyContext
+from app.common.idempotency_store import DuplicateIdempotencyKeyError
 from app.common.models.transaction import TransactionStatus
 from app.modules.transfers import service
 from app.modules.transfers.service import RecipientNotFoundError, SelfTransferError
@@ -18,7 +19,6 @@ from app.modules.transfers.tests.unit.fakes import (
 )
 from app.modules.wallet.service import (
     AmountOutOfRangeError,
-    DuplicateIdempotencyKeyError,
     InsufficientBalanceError,
     WalletNotFoundError,
 )

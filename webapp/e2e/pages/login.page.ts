@@ -1,10 +1,21 @@
+import { readFileSync } from "node:fs";
+
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 /** Pantalla de HU-02 (features/auth/LoginPage.tsx). */
-/** Usuarios sembrados por api/scripts/seed_test_user.py. */
-export const SEEDED_USER = { phone: "3009876543", password: "Clave1234" };
-export const SEEDED_USER_WITHOUT_HISTORY = { phone: "3009876544", password: "Clave1234" };
+interface Credentials {
+  phone: string;
+  password: string;
+}
+
+/** Usuarios sembrados por api/scripts/seed_test_user.py; sus datos viven en fixtures/seeded-users.json. */
+const seeded = JSON.parse(
+  readFileSync(new URL("../fixtures/seeded-users.json", import.meta.url), "utf-8"),
+) as Record<"main" | "withoutHistory", Credentials>;
+
+export const SEEDED_USER = seeded.main;
+export const SEEDED_USER_WITHOUT_HISTORY = seeded.withoutHistory;
 
 export class LoginPage {
   constructor(private readonly page: Page) {}
